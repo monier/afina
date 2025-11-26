@@ -8,8 +8,9 @@ The database uses a relational model (PostgreSQL) to store system configuration,
 ### System & Identity
 *   **User**
     *   `Id`: UUID (PK)
-    *   `Email`: String (Unique)
+    *   `Username`: String (Unique)
     *   `PasswordHash`: String
+    *   `PasswordHint`: String (Nullable)
     *   `SystemRole`: Enum (Admin, Member)
     *   `IndividualTenantId`: UUID (FK to Tenant)
     *   `CreatedAt`: Timestamp
@@ -24,6 +25,35 @@ The database uses a relational model (PostgreSQL) to store system configuration,
     *   `UserId`: UUID (FK)
     *   `Token`: String
     *   `ExpiresAt`: DateTime
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
+
+*   **ApiKey**
+    *   `Id`: UUID (PK)
+    *   `UserId`: UUID (FK)
+    *   `Name`: String (Friendly name)
+    *   `KeyPrefix`: String (First few chars for display)
+    *   `SecretHash`: String (Hashed secret)
+    *   `Scopes`: JSONB (List of allowed actions: "EXPORT", "ROTATE", "USER_MGMT")
+    *   `ExpiresAt`: DateTime (Nullable)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
+
+*   **ApiKeyTenantAccess**
+    *   `ApiKeyId`: UUID (FK)
+    *   `TenantId`: UUID (FK)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   *PK*: (ApiKeyId, TenantId)
 
 ### Multi-Tenancy
 *   **Tenant**
@@ -58,8 +88,8 @@ The database uses a relational model (PostgreSQL) to store system configuration,
     *   `TenantId`: UUID (FK)
     *   `Type`: Enum (Credential, Document, Note, Media)
     *   `CipherText`: String (Encrypted content)
-    *   `EncryptionIdentifier`: String (UUID/ID of the key used)
-    *   `EncryptionVersion`: String (Version of the key used)
+    *   `EncryptionId`: UUID (ID of the encryption context)
+    *   `EncryptionVersionId`: UUID (ID of the specific key version used)
     *   `EncryptionMetadata`: JSONB (IV, Nonce, etc.)
     *   `Metadata`: JSONB (Unencrypted metadata for filtering/searching)
     *   `CreatedAt`: Timestamp
@@ -72,27 +102,39 @@ The database uses a relational model (PostgreSQL) to store system configuration,
 ### Audit
 *   **AuditLog**
     *   `Id`: UUID (PK)
-    *   `Timestamp`: DateTime
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
     *   `UserId`: UUID (FK)
     *   `Action`: String (e.g., "LOGIN", "CREATE_ITEM", "DELETE_USER")
     *   `TenantId`: UUID (Nullable FK)
     *   `Details`: JSONB (Contextual info)
 
 ### Encryption Service (Internal Database - Default Implementation)
-*   **EncryptionContext**
+*   **Encryption**
     *   `Id`: UUID (PK) - Corresponds to `EncryptionId` in Tenant.
     *   `MasterKeyHash`: String (Hash of the master key for verification)
-    *   `CurrentSymmetricVersion`: Int
-    *   `CurrentAsymmetricVersion`: Int
+    *   `CurrentSymmetricKeyId`: UUID (FK to EncryptionKeyVersion)
+    *   `CurrentAsymmetricKeyId`: UUID (FK to EncryptionKeyVersion)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
 
 *   **EncryptionKeyVersion**
-    *   `ContextId`: UUID (FK)
-    *   `Version`: Int
+    *   `Id`: UUID (PK)
+    *   `EncryptionId`: UUID (FK)
     *   `Type`: Enum (Symmetric, Asymmetric)
     *   `Algorithm`: String (e.g., "AES-256-GCM", "RSA-4096")
     *   `EncryptedKeyMaterial`: String (The actual key, encrypted by the Master Key)
     *   `Status`: Enum (Active, Archived)
-    *   `CreatedAt`: DateTime
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
 
 ## ER Diagram
 
@@ -104,9 +146,13 @@ erDiagram
     Tenant ||--o{ VaultItem : "owns"
     Tenant ||--o{ AuditLog : "related to"
     
+    User ||--o{ ApiKey : "owns"
+    ApiKey ||--o{ ApiKeyTenantAccess : "accesses"
+    Tenant ||--o{ ApiKeyTenantAccess : "accessed by"
+
     User {
         UUID Id
-        String Email
+        String Username
         String PasswordHash
         Enum SystemRole
     }
@@ -129,13 +175,14 @@ erDiagram
         UUID TenantId
         Enum Type
         String CipherText
-        String EncryptionIdentifier
-        String EncryptionVersion
+        UUID EncryptionId
+        UUID EncryptionVersionId
     }
 
     AuditLog {
         UUID Id
-        DateTime Timestamp
+        Timestamp CreatedAt
+        DateTime CreatedAtUtc
         UUID UserId
         String Action
     }

@@ -11,7 +11,8 @@ The system provides full visual logs for all user actions. These logs are immuta
 
 ## Log Format
 Each log entry contains:
-*   `Timestamp`: UTC time of action.
+*   `CreatedAt`: Unix Timestamp of action.
+*   `CreatedAtUtc`: UTC DateTime of action.
 *   `Actor`: User ID and Name.
 *   `Action`: Enum (e.g., `VAULT_ITEM_CREATED`, `USER_INVITED`).
 *   `Target`: Resource ID (e.g., Vault Item ID).

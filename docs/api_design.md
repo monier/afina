@@ -6,10 +6,10 @@ Responses are in JSON format.
 
 ## Authentication
 *   **POST /api/v1/auth/register**
-    *   Body: `{ email, passwordHash, salt }`
+    *   Body: `{ username, passwordHash, salt, passwordHint }`
     *   Response: `{ token, refreshToken, user }`
 *   **POST /api/v1/auth/login**
-    *   Body: `{ email, authHash }`
+    *   Body: `{ username, authHash }`
     *   Response: `{ token, refreshToken, user }`
 *   **POST /api/v1/auth/refresh**
     *   Body: `{ refreshToken }`
@@ -25,6 +25,13 @@ Responses are in JSON format.
     *   Action: Deletes user account and individual tenant.
 *   **POST /api/v1/users/me/export**
     *   Response: JSON/CSV export of all user data.
+
+### API Keys
+*   **GET /api/v1/users/me/api-keys**
+*   **POST /api/v1/users/me/api-keys**
+    *   Body: `{ name, scopes, tenantIds }`
+    *   Response: `{ id, name, secret }` (Secret shown only once)
+*   **DELETE /api/v1/users/me/api-keys/{id}**
 
 ## Tenants
 *   **GET /api/v1/tenants**
@@ -70,8 +77,13 @@ Responses are in JSON format.
 
 ## Encryption Service (Internal/External API)
 *   **POST /v1/encrypt**
+    *   Input: `encryptionId` (UUID), `data`, `encryptionVersionId` (UUID, optional)
+    *   Output: `cipherText`, `encryptionId`, `encryptionVersionId` (UUID)
 *   **POST /v1/decrypt**
+    *   Input: `encryptionId` (UUID), `cipherText`, `encryptionVersionId` (UUID)
 *   **POST /v1/rotate**
+    *   Input: `encryptionId` (UUID)
+    *   Output: `newVersionId` (UUID)
 *   **POST /v1/export**
-    *   Input: `encryptionId` (List or Single)
+    *   Input: `encryptionId` (List of UUIDs or Single UUID)
     *   Response: JSON containing encrypted key materials and metadata for backup/portability.

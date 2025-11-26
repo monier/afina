@@ -17,10 +17,11 @@ The Encryption Service must implement the following API contract. The Core Platf
 *   **Input**:
     *   `encryptionId`: UUID (Identifies the tenant's key context)
     *   `data`: String (Plain text or Base64)
+    *   `encryptionVersionId`: UUID (Optional. If provided, uses this specific version.)
 *   **Output**:
     *   `cipherText`: String (Base64)
     *   `encryptionId`: UUID
-    *   `encryptionVersion`: String (Version of the key/algorithm used)
+    *   `encryptionVersionId`: UUID (ID of the key version used)
     *   `algorithm`: String (e.g., "AES-256-GCM")
     *   `metadata`: JSON (Any additional info needed for decryption, e.g., IV/Nonce)
 
@@ -30,14 +31,15 @@ The Encryption Service must implement the following API contract. The Core Platf
 *   **Input**:
     *   `encryptionId`: UUID
     *   `cipherText`: String
-    *   `encryptionVersion`: String
+    *   `encryptionVersionId`: UUID
+    *   `metadata`: JSON
 *   **Output**:
     *   `data`: String (Plain text)
 
 ### 3. Rotate Key
 *   **Endpoint**: `POST /v1/rotate`
-*   **Input**: `tenantId`
-*   **Output**: `newVersion`: String
+*   **Input**: `encryptionId`: UUID
+*   **Output**: `newVersionId`: UUID
 *   **Description**: Triggers the generation of a new active key version. Future encryptions will use this version. Old keys must be retained for decrypting existing data.
 
 ### Master Key Handling
@@ -47,13 +49,13 @@ The **Master Key** is used to encrypt the actual encryption keys (Symmetric/Asym
 
 ### Default Implementation (Internal)
 The platform includes a default Encryption Service module.
-*   **Storage**: Uses the `EncryptionContext` and `EncryptionKeyVersion` tables.
-*   **Logic**: Maps `EncryptionId` -> `Context`. Fetches active `EncryptionKeyVersion`. Decrypts the key material using the Master Key. Performs AES/RSA operations.
+*   **Storage**: Uses the `Encryption` and `EncryptionKeyVersion` tables.
+*   **Logic**: Maps `EncryptionId` -> `Encryption`. Fetches active `EncryptionKeyVersion`. Decrypts the key material using the Master Key. Performs AES/RSA operations.
 
 ### Key Hierarchy
 *   **Tenant Scope**: Keys are isolated per tenant.
 *   **Key Versions**:
-    *   Each encryption operation is tagged with an `EncryptionVersion`.
+    *   Each encryption operation is tagged with an `EncryptionVersionId`.
     *   **Rotation**: When a rotation is triggered, a new key version becomes "Active".
     *   **Re-encryption**: A background process can read data (decrypt with old key) and write it back (encrypt with new key) to migrate data to the latest version.
 
@@ -63,9 +65,25 @@ The platform includes a default Encryption Service module.
 
 ## Authentication & Network Security
 
-### User Authentication
-*   Standard JWT/OAuth2 flow for user login to the Core Platform.
-*   Passwords hashed using **Argon2id**.
+## Authentication & Access Control
+
+### 1. Human Flow (Interactive)
+*   **Credentials**: Username + Password.
+*   **MFA**: Optional but recommended (TOTP).
+*   **Mechanism**: Exchange credentials for JWT.
+*   **Recovery**: **No Password Recovery**. The system is Zero-Knowledge. If the password is lost, the data is lost.
+    *   **Password Hint**: Users can set a hint to help them remember their password. This hint is stored in plain text.
+*   **Permissions**: **Full Access** based on roles.
+    *   Can CRUD Private Data (Vault).
+    *   Can Manage Users/Tenants.
+
+### 2. System Flow (Machine-to-Machine)
+*   **Credentials**: API Key + API Secret.
+*   **Mechanism**: Passed via HTTP Headers (`X-Api-Key`, `X-Api-Secret`).
+*   **Permissions**: **Restricted Access**.
+    *   **Allowed**: Automation tasks (Export, Key Rotation, User Management).
+    *   **DENIED**: CRUD operations on Private Data (Vault).
+    *   *Note*: Can read encrypted blobs for backup/export purposes, but cannot modify them.
 
 ### Service-to-Service Auth
 *   **Core <-> Encryption Service**:
