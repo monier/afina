@@ -1,63 +1,100 @@
-# Security & Zero-Knowledge Design
+# Security & Encryption Design
 
 ## Overview
-The platform adopts a Zero-Knowledge (ZK) architecture. The server never sees the user's password or the unencrypted data. All encryption and decryption happen on the client side.
+The platform uses a **Pluggable Encryption Architecture**. The core application does not handle encryption logic or key management directly. Instead, it delegates these operations to an **Encryption Service**.
 
-## Authentication & Key Derivation
+This allows:
+1.  **Zero-Knowledge (for the Core)**: The core database only stores encrypted blobs.
+2.  **Sovereignty**: Tenants can host their own Encryption Service, ensuring they hold the keys.
+3.  **Flexibility**: Support for different encryption algorithms and key management strategies (HSM, KMS, etc.).
 
-### User Keys
-1.  **Master Password**: Known only to the user.
-2.  **Master Key**: Derived from Master Password using Argon2id (Client-side).
-3.  **Auth Hash**: Derived from Master Key (e.g., HMAC-SHA256). Sent to server for authentication.
-4.  **User Key Pair (RSA/ECC)**:
-    *   Generated upon account creation.
-    *   **Private Key**: Encrypted with the Master Key (AES-256-GCM) and stored on the server.
-    *   **Public Key**: Stored in plain text on the server, available to other users for sharing.
+## Encryption Service Contract
+The Encryption Service must implement the following API contract. The Core Platform communicates with this service via HTTPS.
 
-### Tenant Keys
-1.  **Tenant Master Key**: A symmetric key (AES-256) generated when a tenant is created.
-2.  **Storage**:
-    *   The Tenant Master Key is **never** stored in plain text.
-    *   It is encrypted with the **Public Key** of each member who has access to the tenant.
-    *   Stored in the `TenantMembership` table as `EncryptedTenantKey`.
+### 1. Encrypt Data
+*   **Endpoint**: `POST /v1/encrypt`
+*   **Headers**: `X-Master-Key` (Optional, if client-provided)
+*   **Input**:
+    *   `encryptionId`: UUID (Identifies the tenant's key context)
+    *   `data`: String (Plain text or Base64)
+*   **Output**:
+    *   `cipherText`: String (Base64)
+    *   `encryptionId`: UUID
+    *   `encryptionVersion`: String (Version of the key/algorithm used)
+    *   `algorithm`: String (e.g., "AES-256-GCM")
+    *   `metadata`: JSON (Any additional info needed for decryption, e.g., IV/Nonce)
 
-## Data Encryption Flow
+### 2. Decrypt Data
+*   **Endpoint**: `POST /v1/decrypt`
+*   **Headers**: `X-Master-Key` (Optional, if client-provided)
+*   **Input**:
+    *   `encryptionId`: UUID
+    *   `cipherText`: String
+    *   `encryptionVersion`: String
+*   **Output**:
+    *   `data`: String (Plain text)
 
-### Writing Data (Create/Update)
-1.  Client generates a random IV/Nonce.
-2.  Client encrypts the payload (JSON) using the **Tenant Master Key** (AES-256-GCM).
-3.  Client sends `EncryptedData` and `IV` to the server.
+### 3. Rotate Key
+*   **Endpoint**: `POST /v1/rotate`
+*   **Input**: `tenantId`
+*   **Output**: `newVersion`: String
+*   **Description**: Triggers the generation of a new active key version. Future encryptions will use this version. Old keys must be retained for decrypting existing data.
 
-### Reading Data
-1.  Client requests data.
-2.  Server returns `EncryptedData` and `IV`.
-3.  Client decrypts the data using the **Tenant Master Key**.
+### Master Key Handling
+The **Master Key** is used to encrypt the actual encryption keys (Symmetric/Asymmetric) stored in the Encryption Service database.
+1.  **Platform-Managed**: Stored securely in the environment (Env Var, AWS KMS, Azure Key Vault). Used for standard tenants.
+2.  **Client-Provided (Zero-Knowledge)**: Derived from the user's password. Passed in the `X-Master-Key` header for every request. The service does **not** store this key.
 
-## Sharing & Membership
-When a user is added to a tenant:
-1.  The admin (who has the decrypted Tenant Master Key) fetches the new user's **Public Key**.
-2.  The admin encrypts the **Tenant Master Key** with the new user's Public Key.
-3.  The admin sends this `EncryptedTenantKey` to the server to be stored in the new user's `TenantMembership` record.
+### Default Implementation (Internal)
+The platform includes a default Encryption Service module.
+*   **Storage**: Uses the `EncryptionContext` and `EncryptionKeyVersion` tables.
+*   **Logic**: Maps `EncryptionId` -> `Context`. Fetches active `EncryptionKeyVersion`. Decrypts the key material using the Master Key. Performs AES/RSA operations.
 
-## Network Security
-*   **TLS 1.3**: All communication is encrypted in transit.
-*   **HTTP Headers**: HSTS, CSP, X-Frame-Options enforced.
+### Key Hierarchy
+*   **Tenant Scope**: Keys are isolated per tenant.
+*   **Key Versions**:
+    *   Each encryption operation is tagged with an `EncryptionVersion`.
+    *   **Rotation**: When a rotation is triggered, a new key version becomes "Active".
+    *   **Re-encryption**: A background process can read data (decrypt with old key) and write it back (encrypt with new key) to migrate data to the latest version.
 
-## Diagram: Key Hierarchy
+### Storage
+*   The **Encryption Service** is responsible for securely storing keys (e.g., in HashiCorp Vault, AWS KMS, or an encrypted database).
+*   The **Core Platform** only stores the `KeyId` and `Version` as metadata.
+
+## Authentication & Network Security
+
+### User Authentication
+*   Standard JWT/OAuth2 flow for user login to the Core Platform.
+*   Passwords hashed using **Argon2id**.
+
+### Service-to-Service Auth
+*   **Core <-> Encryption Service**:
+    *   Mutual TLS (mTLS) recommended.
+    *   API Key / Shared Secret (configured per tenant).
+
+### Data in Transit
+*   **TLS 1.3** is mandatory for all connections.
+*   Data sent to the Encryption Service is plain text *over the wire* (protected by TLS), so the connection MUST be secure.
+
+## Diagram: Encryption Flow
 ```mermaid
-graph TD
-    Password[User Password] -->|Argon2id| MasterKey[Master Key]
-    MasterKey -->|Decrypts| UserPrivKey[User Private Key]
-    UserPrivKey -->|Decrypts| TenantKey[Tenant Master Key]
-    TenantKey -->|Encrypts/Decrypts| Data[Vault Data]
+sequenceDiagram
+    participant Client
+    participant Core as Core Platform
+    participant ES as Encryption Service
+    participant DB as Core Database
+
+    Note over Client, Core: Write Operation
+    Client->>Core: POST /items (PlainText)
+    Core->>ES: POST /encrypt (PlainText)
+    ES-->>Core: Returns { CipherText, KeyId, Version }
+    Core->>DB: INSERT (CipherText, Metadata)
     
-    subgraph Server Storage
-        EncUserPrivKey[Encrypted User Private Key]
-        EncTenantKey[Encrypted Tenant Key per User]
-        EncData[Encrypted Vault Data]
-    end
-    
-    EncUserPrivKey -.-> UserPrivKey
-    EncTenantKey -.-> TenantKey
-    EncData -.-> Data
+    Note over Client, Core: Read Operation
+    Client->>Core: GET /items
+    Core->>DB: SELECT (CipherText, Metadata)
+    DB-->>Core: Returns Row
+    Core->>ES: POST /decrypt (CipherText, KeyId, Version)
+    ES-->>Core: Returns PlainText
+    Core-->>Client: Returns PlainText
 ```

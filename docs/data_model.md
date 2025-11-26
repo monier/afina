@@ -10,9 +10,14 @@ The database uses a relational model (PostgreSQL) to store system configuration,
     *   `Id`: UUID (PK)
     *   `Email`: String (Unique)
     *   `PasswordHash`: String
-    *   `CreatedAt`: DateTime
     *   `SystemRole`: Enum (Admin, Member)
-    *   `IndividualTenantId`: UUID (FK to Tenant) - The user's personal tenant.
+    *   `IndividualTenantId`: UUID (FK to Tenant)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID (Nullable - System)
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID (Nullable)
 
 *   **RefreshToken**
     *   `Id`: UUID (PK)
@@ -25,26 +30,44 @@ The database uses a relational model (PostgreSQL) to store system configuration,
     *   `Id`: UUID (PK)
     *   `Name`: String
     *   `Type`: Enum (Individual, Organization)
-    *   `EncryptedMasterKey`: String (The tenant's master key, encrypted by... see Security Design)
-    *   `CreatedAt`: DateTime
+    *   `EncryptionServiceUrl`: String (Nullable, overrides default)
+    *   `EncryptionConfig`: JSONB (Auth credentials, etc.)
+    *   `EncryptionId`: UUID (The root identifier for this tenant's keys in the Encryption Service)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
 
 *   **TenantMembership**
     *   `TenantId`: UUID (FK)
     *   `UserId`: UUID (FK)
     *   `Role`: Enum (TenantAdmin, TenantMember)
-    *   `EncryptedTenantKey`: String (The tenant's master key, encrypted with the user's public key or derived key)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
+    *   `CreatedBy`: UUID
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
     *   *PK*: (TenantId, UserId)
 
 ### Vault (Private Data)
-*   **VaultItem**
+*   **Vault**
     *   `Id`: UUID (PK)
     *   `TenantId`: UUID (FK)
     *   `Type`: Enum (Credential, Document, Note, Media)
-    *   `EncryptedData`: String (JSON blob encrypted with Tenant Master Key)
-    *   `Metadata`: JSONB (Unencrypted metadata for filtering, e.g., name, tags - *careful with privacy*)
-    *   `CreatedAt`: DateTime
-    *   `UpdatedAt`: DateTime
+    *   `CipherText`: String (Encrypted content)
+    *   `EncryptionIdentifier`: String (UUID/ID of the key used)
+    *   `EncryptionVersion`: String (Version of the key used)
+    *   `EncryptionMetadata`: JSONB (IV, Nonce, etc.)
+    *   `Metadata`: JSONB (Unencrypted metadata for filtering/searching)
+    *   `CreatedAt`: Timestamp
+    *   `CreatedAtUtc`: DateTime
     *   `CreatedBy`: UUID (FK to User)
+    *   `UpdatedAt`: Timestamp
+    *   `UpdatedAtUtc`: DateTime
+    *   `UpdatedBy`: UUID
 
 ### Audit
 *   **AuditLog**
@@ -54,6 +77,22 @@ The database uses a relational model (PostgreSQL) to store system configuration,
     *   `Action`: String (e.g., "LOGIN", "CREATE_ITEM", "DELETE_USER")
     *   `TenantId`: UUID (Nullable FK)
     *   `Details`: JSONB (Contextual info)
+
+### Encryption Service (Internal Database - Default Implementation)
+*   **EncryptionContext**
+    *   `Id`: UUID (PK) - Corresponds to `EncryptionId` in Tenant.
+    *   `MasterKeyHash`: String (Hash of the master key for verification)
+    *   `CurrentSymmetricVersion`: Int
+    *   `CurrentAsymmetricVersion`: Int
+
+*   **EncryptionKeyVersion**
+    *   `ContextId`: UUID (FK)
+    *   `Version`: Int
+    *   `Type`: Enum (Symmetric, Asymmetric)
+    *   `Algorithm`: String (e.g., "AES-256-GCM", "RSA-4096")
+    *   `EncryptedKeyMaterial`: String (The actual key, encrypted by the Master Key)
+    *   `Status`: Enum (Active, Archived)
+    *   `CreatedAt`: DateTime
 
 ## ER Diagram
 
@@ -76,21 +115,22 @@ erDiagram
         UUID Id
         String Name
         Enum Type
-        String EncryptedMasterKey
+        String EncryptionServiceUrl
     }
 
     TenantMembership {
         UUID TenantId
         UUID UserId
         Enum Role
-        String EncryptedTenantKey
     }
 
-    VaultItem {
+    Vault {
         UUID Id
         UUID TenantId
         Enum Type
-        String EncryptedData
+        String CipherText
+        String EncryptionIdentifier
+        String EncryptionVersion
     }
 
     AuditLog {

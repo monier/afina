@@ -16,7 +16,11 @@ The system consists of the following main components:
     *   Hosts REST APIs.
     *   Implements business logic, authentication, and authorization.
     *   Modules: Identity, Tenant Management, Private Data, Audit Logs.
-4.  **Data Layer**:
+4.  **Encryption Service (Pluggable)**:
+    *   **Role**: Handles all encryption/decryption and key management.
+    *   **Default Implementation**: Embedded within the Modular Monolith (as a module) but logically distinct.
+    *   **External Implementation**: Tenants can override this with a URL to an external service.
+5.  **Data Layer**:
     *   **Database**: PostgreSQL accessed via EF Core.
     *   **Storage**: File storage for documents/media (Local filesystem or S3-compatible).
 
@@ -31,7 +35,7 @@ The backend is structured as a modular monolith. Each module has its own:
 ### Core Modules
 *   **Identity Module**: Handles system-level users, authentication (JWT, OAuth2), and system roles.
 *   **Tenant Module**: Handles tenant creation, membership, and tenant-level roles.
-*   **Vault Module**: Core zero-knowledge storage logic. Handles encryption/decryption client-side (conceptually) and storage of encrypted blobs.
+*   **Vault Module**: Core data storage logic. Proxies data to the configured Encryption Service before storage.
 *   **Audit Module**: centralized logging of all user actions.
 
 ## Technology Stack
@@ -42,10 +46,11 @@ The backend is structured as a modular monolith. Each module has its own:
 *   **Containerization**: Docker, Docker Compose.
 *   **Testing**: xUnit, Testcontainers.
 
-## Zero-Knowledge Architecture
-*   **Client-Side Encryption**: Data is encrypted on the client side before being sent to the server.
-*   **Master Key**: Each tenant has a master key, never stored in plain text on the server.
-*   **Key Management**: Keys are derived from user passwords or managed via a secure key exchange mechanism (details in Security Design).
+## Zero-Knowledge / Pluggable Encryption Architecture
+*   **Server-Side Encryption**: Data is encrypted by a dedicated Encryption Service before being stored.
+*   **Pluggable**: Tenants can define their own Encryption Service URL.
+*   **Key Management**: Keys are managed by the Encryption Service, not the main application.
+*   **Versioning & Rotation**: Data includes metadata about the key version and algorithm used.
 
 ## Diagram
 ```mermaid
@@ -57,10 +62,19 @@ graph TD
         Vault[Vault Module]
         Audit[Audit Module]
     end
+    
+    subgraph "Encryption Layer"
+        ES[Encryption Service (Default or Custom)]
+    end
+
     API --> Identity
     API --> Tenant
     API --> Vault
     API --> Audit
+    
+    Vault -->|Plain Text| ES
+    ES -->|Encrypted Data| Vault
+    
     Identity --> DB[(PostgreSQL)]
     Tenant --> DB
     Vault --> DB
