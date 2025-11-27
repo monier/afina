@@ -1,12 +1,16 @@
 using Afina.Data;
 using Afina.Api.Endpoints;
-using Afina.Modules.Identity.Endpoints;
+using Afina.Core.Interfaces;
+using Afina.Modules.Identity.Endpoints.Register;
+using Afina.Modules.Identity.Endpoints.Login;
 using Afina.Modules.Identity.Services;
-using Afina.Modules.Tenant.Endpoints;
+using Afina.Modules.Tenant.Endpoints.CreateTenant;
 using Afina.Modules.Tenant.Services;
-using Afina.Modules.Vault.Endpoints;
+using Afina.Modules.Vault.Endpoints.CreateVaultItem;
+using Afina.Modules.Vault.Endpoints.ListVaultItems;
 using Afina.Modules.Vault.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,9 +64,11 @@ if (!app.Environment.IsProduction())
 app.UseHttpsRedirection();
 app.UseCors();
 
-// Map endpoints
-app.MapIdentityEndpoints();
-app.MapTenantEndpoints();
-app.MapVaultEndpoints();
+// Map endpoints using IEndpoint interface
+new RegisterEndpoint().MapEndpoint(app);
+new LoginEndpoint().MapEndpoint(app);
+new CreateTenantEndpoint().MapEndpoint(app);
+new CreateVaultItemEndpoint().MapEndpoint(app);
+new ListVaultItemsEndpoint().MapEndpoint(app);
 
 app.Run();

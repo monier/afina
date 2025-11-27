@@ -22,8 +22,8 @@
     <ProjectReference Include="..\Afina.Modules.Vault\Afina.Modules.Vault.csproj" />
     <ProjectReference Include="..\Afina.Modules.Encryption\Afina.Modules.Encryption.csproj" />
     <ProjectReference Include="..\Afina.Modules.Audit\Afina.Modules.Audit.csproj" />
-    <ProjectReference Include="..\Afina.Shared\Afina.Shared.csproj" />
     <ProjectReference Include="..\Afina.Data\Afina.Data.csproj" />
+    <ProjectReference Include="..\Afina.Core\Afina.Core.csproj" />
   </ItemGroup>
 
 </Project>

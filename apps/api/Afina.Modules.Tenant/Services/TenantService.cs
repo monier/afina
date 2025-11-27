@@ -1,6 +1,6 @@
 using Afina.Data;
 using Afina.Data.Entities;
-using Afina.Modules.Tenant.DTOs;
+using Afina.Modules.Tenant.Endpoints.CreateTenant;
 
 namespace Afina.Modules.Tenant.Services;
 

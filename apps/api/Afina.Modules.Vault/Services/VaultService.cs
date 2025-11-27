@@ -1,6 +1,7 @@
 using Afina.Data;
 using Afina.Data.Entities;
-using Afina.Modules.Vault.DTOs;
+using Afina.Modules.Vault.Endpoints.CreateVaultItem;
+using Afina.Modules.Vault.Endpoints.ListVaultItems;
 using Microsoft.EntityFrameworkCore;
 
 namespace Afina.Modules.Vault.Services;

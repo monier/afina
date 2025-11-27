@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Afina.Shared\Afina.Shared.csproj" />
     <ProjectReference Include="..\Afina.Data\Afina.Data.csproj" />
+    <ProjectReference Include="..\Afina.Core\Afina.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
