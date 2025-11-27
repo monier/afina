@@ -24,24 +24,39 @@ The system consists of the following main components:
     *   **Database**: PostgreSQL accessed via EF Core.
     *   **Storage**: File storage for documents/media (Local filesystem or S3-compatible).
 
-## Modular Monolith Design
+## High-Level Architecture
+The Afina API follows a **Modular Monolith** architecture with **Vertical Slices**. Each module is self-contained and represents a specific business domain (e.g., Identity, Tenant, Vault).
 
-The backend is structured as a modular monolith. Each module has its own:
-*   API Endpoints (Controllers)
-*   Application Logic (Services/Handlers)
-*   Domain Model
-*   Infrastructure (Repositories, DB Context slices)
+## Project Structure
 
-### Core Modules
-*   **Identity Module**: Handles system-level users, authentication (JWT, OAuth2), and system roles.
-*   **Tenant Module**: Handles tenant creation, membership, and tenant-level roles.
-*   **Vault Module**: Core data storage logic. Proxies data to the configured Encryption Service before storage.
-*   **Audit Module**: centralized logging of all user actions.
+### Core & Infrastructure
+- **Afina.Core**: Contains common business logic shared between modules.
+- **Afina.Infrastructure**: Handles cross-cutting concerns (logging, serialization, etc.) not directly related to business logic.
+- **Afina.Contracts**: Defines public interfaces and contracts exposed by Afina services.
+- **Afina.Data**: A shared library containing all Entity Framework Core entities and migrations.
+
+### Modules
+Each module (e.g., `Afina.Modules.Identity`) is a vertical slice designed to fit by itself.
+- **Endpoints**: Contains API endpoints. Each endpoint corresponds to a single action and resides in its own subfolder containing:
+    - `{Name}Endpoint.cs`
+    - `{Name}Request.cs` (with validators)
+    - `{Name}Response.cs`
+    - Middlewares (if any)
+- **Services**: Contains business logic.
+- **Models**: Contains business logic models. Services output only objects from Models.
+- **Repositories**: Handles data access. Outputs only objects from Entities (defined in `Afina.Data`).
+- **Proxies**: Proxies to external services.
+
+### Data Layer
+- **Afina.Data**:
+    - **Entities**: All database entities. Must inherit from `EntityBase` (contains `CreatedAt`, `UpdatedAt`, etc.).
+    - **Migrations**: EF Core migrations.
 
 ## Technology Stack
-
-*   **Backend**: .NET Core (Latest LTS), C#, Entity Framework Core.
-*   **Database**: PostgreSQL.
+- **Framework**: .NET 8 (ASP.NET Core)
+- **Database**: PostgreSQL
+- **ORM**: Entity Framework Core
+- **API**: Minimal APIs
 *   **Frontend**: React, TypeScript, Vite, Styled-Components, Tailwind CSS.
 *   **Containerization**: Docker, Docker Compose.
 *   **Testing**: xUnit, Testcontainers.

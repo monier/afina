@@ -6,7 +6,9 @@ WORKDIR /src
 COPY Afina.sln ./
 COPY Afina.Api/Afina.Api.csproj Afina.Api/
 COPY Afina.Data/Afina.Data.csproj Afina.Data/
-COPY Afina.Shared/Afina.Shared.csproj Afina.Shared/
+COPY Afina.Core/Afina.Core.csproj Afina.Core/
+COPY Afina.Infrastructure/Afina.Infrastructure.csproj Afina.Infrastructure/
+COPY Afina.Contracts/Afina.Contracts.csproj Afina.Contracts/
 COPY Afina.Modules.Identity/Afina.Modules.Identity.csproj Afina.Modules.Identity/
 COPY Afina.Modules.Tenant/Afina.Modules.Tenant.csproj Afina.Modules.Tenant/
 COPY Afina.Modules.Vault/Afina.Modules.Vault.csproj Afina.Modules.Vault/

@@ -1,6 +1,7 @@
 using Afina.Data;
 using Afina.Data.Entities;
-using Afina.Modules.Identity.DTOs;
+using Afina.Modules.Identity.Endpoints.Register;
+using Afina.Modules.Identity.Endpoints.Login;
 using Microsoft.EntityFrameworkCore;
 
 namespace Afina.Modules.Identity.Services;
