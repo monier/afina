@@ -1,0 +1,31 @@
+# Migration-specific Dockerfile
+# This image is used solely for running database migrations and exits after completion
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS migration
+
+WORKDIR /src
+
+# Copy solution and project files
+COPY Afina.sln .
+COPY Afina.Api/Afina.Api.csproj Afina.Api/
+COPY Afina.Shared/Afina.Shared.csproj Afina.Shared/
+COPY Afina.Modules.Identity/Afina.Modules.Identity.csproj Afina.Modules.Identity/
+COPY Afina.Modules.Tenant/Afina.Modules.Tenant.csproj Afina.Modules.Tenant/
+COPY Afina.Modules.Vault/Afina.Modules.Vault.csproj Afina.Modules.Vault/
+COPY Afina.Modules.Encryption/Afina.Modules.Encryption.csproj Afina.Modules.Encryption/
+COPY Afina.Modules.Audit/Afina.Modules.Audit.csproj Afina.Modules.Audit/
+
+# Restore dependencies
+RUN dotnet restore
+
+# Copy source code
+COPY . .
+
+# Install EF Core tools
+RUN dotnet tool install --global dotnet-ef --version 9.0.0
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Set working directory to the API project
+WORKDIR /src/Afina.Api
+
+# Entry point runs migrations and exits
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--no-build"]
