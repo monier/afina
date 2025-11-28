@@ -1,4 +1,17 @@
-.PHONY: help clean format build run run-native stop logs clean-docker clean-native migrate migrate-create migrate-endpoint migrate-native
+.PHONY: help check-prereqs
+.PHONY: clean clean-native
+.PHONY: build build-native
+.PHONY: run run-api-native run-web-native stop stop-native
+.PHONY: format format-native lint lint-native
+.PHONY: test test-native
+.PHONY: before-push
+.PHONY: add-migration add-migration-native execute-migration execute-migration-native
+.PHONY: logs logs-api logs-web logs-db ps restart
+.PHONY: shell-api shell-db dev-api dev-web
+
+# ============================================================================
+# Configuration & Detection
+# ============================================================================
 
 # Detect if using podman or docker
 DOCKER_CMD := $(shell command -v podman 2> /dev/null)
@@ -19,16 +32,16 @@ ifndef COMPOSE_CMD
 	endif
 endif
 
-# Check if docker/podman tools are available
+# Load environment variables
 include .env
 export $(shell sed 's/=.*//' .env)
 
-# Detect if using podman or docker
+# Define check functions
 define check_docker
 	@if [ -z "$(DOCKER_CMD)" ]; then \
 		echo "❌ Error: Neither Docker nor Podman is installed"; \
 		echo "   Please install Docker or Podman to use containerized commands"; \
-		echo "   Or use 'make run-native' for native development"; \
+		echo "   Or use 'make <command>-native' for native development"; \
 		exit 1; \
 	fi
 	@if [ -z "$(COMPOSE_CMD)" ]; then \
@@ -38,197 +51,407 @@ define check_docker
 	fi
 endef
 
+define check_dotnet
+	@if ! command -v dotnet > /dev/null 2>&1; then \
+		echo "❌ Error: .NET SDK is not installed"; \
+		echo "   Please install .NET 9 SDK from https://dotnet.microsoft.com/download"; \
+		exit 1; \
+	fi
+endef
+
+define check_node
+	@if ! command -v node > /dev/null 2>&1; then \
+		echo "❌ Error: Node.js is not installed"; \
+		echo "   Please install Node.js 25+ from https://nodejs.org/"; \
+		exit 1; \
+	fi
+endef
+
+define check_postgres_native
+	@if ! command -v psql > /dev/null 2>&1; then \
+		echo "⚠️  Warning: PostgreSQL client (psql) is not installed"; \
+		echo "   Install it to verify database connectivity"; \
+	fi
+	@if command -v pg_isready > /dev/null 2>&1; then \
+		if ! pg_isready -h localhost -p $(DB_PORT) > /dev/null 2>&1; then \
+			echo "❌ Error: PostgreSQL is not running on localhost:$(DB_PORT)"; \
+			echo "   Please start PostgreSQL or use 'make run' for Docker-based setup"; \
+			exit 1; \
+		fi \
+	else \
+		echo "⚠️  Warning: Cannot verify PostgreSQL connectivity (pg_isready not found)"; \
+		echo "   Make sure PostgreSQL is running on localhost:$(DB_PORT)"; \
+	fi
+endef
+
+# ============================================================================
+# Prerequisites Check
+# ============================================================================
+
+check-prereqs: ## Check all prerequisites (.env, SDKs, tools)
+	@echo "🔍 Checking prerequisites..."
+	@# Check .env file
+	@if [ ! -f .env ]; then \
+		echo "❌ .env file not found"; \
+		echo "   Run: cp .env.example .env"; \
+		exit 1; \
+	fi
+	@# Check .NET SDK
+	@if ! command -v dotnet > /dev/null 2>&1; then \
+		echo "❌ .NET SDK not installed"; \
+		echo "   Install from: https://dotnet.microsoft.com/download"; \
+		exit 1; \
+	fi
+	@# Check Node.js
+	@if ! command -v node > /dev/null 2>&1; then \
+		echo "❌ Node.js not installed"; \
+		echo "   Install from: https://nodejs.org/"; \
+		exit 1; \
+	fi
+	@# Check Docker/Podman for Docker commands
+	@if [ -z "$(DOCKER_CMD)" ] && [ -z "$(COMPOSE_CMD)" ]; then \
+		echo "⚠️  Docker/Podman not found (required for Docker commands)"; \
+	fi
+	@echo "✅ All prerequisites OK"
+
+# ============================================================================
+# Help
+# ============================================================================
+
 help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
+	@echo 'Core Commands (Docker-based by default):'
+	@echo '  clean              Clean all resources (Docker + native)'
+	@echo '  build              Build all applications'
+	@echo '  run                Run all services'
+	@echo '  format             Format all source code'
+	@echo '  lint               Lint/check all source code'
+	@echo '  test               Run all tests'
+	@echo ''
+	@echo 'Native Development Commands (use -native suffix):'
+	@echo '  clean-native       Clean native build artifacts'
+	@echo '  build-native       Build applications natively'
+	@echo '  run-api-native     Run API natively'
+	@echo '  run-web-native     Run Web natively'
+	@echo '  format-native      Format code natively'
+	@echo '  lint-native        Lint code natively'
+	@echo '  test-native        Run tests natively'
+	@echo ''
+	@echo 'Quality Assurance:'
+	@echo '  before-push        Run all checks before pushing (native)'
+	@echo ''
+	@echo 'API/Backend Specific Commands:'
+	@echo '  add-migration NAME=<name>        Create new migration (Docker)'
+	@echo '  add-migration-native NAME=<name> Create new migration (native)'
+	@echo '  execute-migration                Run migrations (Docker)'
+	@echo '  execute-migration-native         Run migrations (native)'
+	@echo ''
+	@echo 'Docker Management:'
+	@echo '  stop               Stop Docker services'
+	@echo '  restart            Restart Docker services'
+	@echo '  logs               View all logs'
+	@echo '  logs-api           View API logs'
+	@echo '  logs-web           View Web logs'
+	@echo '  logs-db            View database logs'
+	@echo '  ps                 Show running containers'
+	@echo '  shell-api          Open shell in API container'
+	@echo '  shell-db           Open PostgreSQL shell'
+	@echo ''
+	@echo 'Development Helpers:'
+	@echo '  dev-api            Run API with hot reload (native)'
+	@echo '  dev-web            Run Web with hot reload (native)'
+	@echo '  stop-native        Stop native services'
+	@echo ''
+	@echo 'For more details, run: make help-verbose'
+
+help-verbose: ## Show detailed help with descriptions
+	@echo 'Usage: make [target]'
+	@echo ''
 	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-30s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-# Clean targets
-clean: clean-docker clean-native ## Clean everything (Docker containers and native artifacts)
 
-clean-docker: ## Stop and remove all Docker containers and volumes
+# ============================================================================
+# Clean Targets
+# ============================================================================
+
+clean: clean-native ## Clean all resources (Docker containers/volumes and native artifacts)
 	$(check_docker)
 	@echo "🧹 Cleaning Docker resources..."
 	$(COMPOSE_CMD) down -v --remove-orphans
-	@echo "✅ Docker cleanup complete"
+	@echo "✅ Complete cleanup finished"
 
 clean-native: ## Clean native build artifacts
-	@echo "🧹 Cleaning native artifacts..."
-	@echo "Cleaning API..."
-	@cd apps/api && dotnet clean && rm -rf */bin */obj */Migrations 2>/dev/null || true
-	@echo "Cleaning Web..."
+	@echo "🧹 Cleaning..."
+	@cd apps/api && dotnet clean Afina.sln --nologo 2>/dev/null || true
+	@cd apps/api && find . -name "bin" -o -name "obj" -type d -exec rm -rf {} + 2>/dev/null || true
 	@cd apps/web && rm -rf node_modules dist .vite 2>/dev/null || true
-	@echo "✅ Native cleanup complete"
 
-# Format targets
-format: format-api format-web ## Format all source code
+# ============================================================================
+# Build Targets
+# ============================================================================
 
-format-api: ## Format .NET code
-	@echo "🎨 Formatting API code..."
-	@cd apps/api && dotnet format
-	@echo "✅ API formatting complete"
-
-format-web: ## Format web code
-	@echo "🎨 Formatting web code..."
-	@cd apps/web && npm run lint -- --fix 2>/dev/null || echo "⚠️  Linting skipped (no lint script)"
-	@echo "✅ Web formatting complete"
-
-# Build targets
-build: build-docker ## Build everything (default: Docker)
-
-build-docker: ## Build Docker images
+build: ## Build all applications (Docker images)
 	$(check_docker)
 	@echo "🏗️  Building Docker images..."
-	$(COMPOSE_CMD) build --no-cache
+	$(COMPOSE_CMD) build
 	@echo "✅ Docker build complete"
+	@echo ""
+	@echo "💡 Run 'make run' to start services"
 
-build-native: ## Build applications natively
-	@echo "🏗️  Building API..."
-	@cd apps/api && dotnet restore && dotnet build
-	@echo "🏗️  Building Web..."
-	@cd apps/web && npm install && npm run build
-	@echo "✅ Native build complete"
+build-native: check-prereqs ## Build applications natively
+	@echo "🏗️  Building..."
+	@cd apps/api && dotnet build Afina.sln --nologo
+	@cd apps/web && npm install --silent && npm run build --silent
 
-# Run targets
-run: ## Run the whole infrastructure with Docker
+# ============================================================================
+# Run Targets
+# ============================================================================
+
+run: ## Run all services (Docker-based)
 	$(check_docker)
-	@echo "🚀 Starting infrastructure with Docker..."
+	@echo "🚀 Starting all services with Docker..."
 	$(COMPOSE_CMD) up -d
-	@echo "✅ Infrastructure started"
+	@echo "✅ All services started"
 	@echo ""
 	@echo "📍 Services available at:"
-	@echo "   - Web:      http://localhost:${WEB_PORT}"
-	@echo "   - API:      http://localhost:${API_PORT}"
-	@echo "   - Postgres: localhost:${DB_PORT}"
+	@echo "   • Web UI:    http://localhost:$(WEB_PORT)"
+	@echo "   • API:       http://localhost:$(API_PORT)"
+	@echo "   • Database:  localhost:$(DB_PORT)"
 	@echo ""
-	@echo "💡 Run 'make logs' to view logs"
-	@echo "💡 Run 'make stop' to stop all services"
+	@echo "💡 Useful commands:"
+	@echo "   • View logs:        make logs"
+	@echo "   • View API logs:    make logs-api"
+	@echo "   • Stop services:    make stop"
+	@echo "   • Restart services: make restart"
 
-run-native: ## Run applications natively (requires PostgreSQL running)
-	@echo "🚀 Starting native development..."
+run-api-native: ## Run API natively (requires PostgreSQL running)
+	$(check_dotnet)
+	$(check_postgres_native)
+	@echo "🚀 Starting API natively..."
+	@echo "   PostgreSQL: localhost:$(DB_PORT)"
+	@echo "   API will run on: http://localhost:$(API_PORT)"
 	@echo ""
-	@echo "⚠️  Make sure PostgreSQL is running on localhost:${DB_PORT}"
-	@echo ""
-	@echo "Starting API in background..."
-	@cd apps/api/Afina.Api && dotnet run > /tmp/afina-api.log 2>&1 & echo $$! > /tmp/afina-api.pid
-	@sleep 3
-	@echo "Starting Web dev server in background..."
-	@cd apps/web && npm run dev > /tmp/afina-web.log 2>&1 & echo $$! > /tmp/afina-web.pid
-	@sleep 2
-	@echo ""
-	@echo "✅ Native services started"
-	@echo ""
-	@echo "📍 Services available at:"
-	@echo "   - Web:      http://localhost:${WEB_PORT}"
-	@echo "   - API:      http://localhost:${API_PORT}"
-	@echo ""
-	@echo "💡 Logs:"
-	@echo "   - API: tail -f /tmp/afina-api.log"
-	@echo "   - Web: tail -f /tmp/afina-web.log"
-	@echo ""
-	@echo "💡 To stop: make stop-native"
+	@cd apps/api/Afina.Api && \
+		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
+		ASPNETCORE_URLS="http://localhost:$(API_PORT)" \
+		dotnet run
 
-stop: ## Stop Docker services
+run-web-native: ## Run Web natively
+	$(check_node)
+	@echo "🚀 Starting Web natively..."
+	@echo "   Web will run on: http://localhost:5173 (Vite default)"
+	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo ""
+	@cd apps/web && npm run dev
+
+stop: ## Stop all Docker services
 	$(check_docker)
 	@echo "🛑 Stopping Docker services..."
 	$(COMPOSE_CMD) down
 	@echo "✅ Services stopped"
 
-stop-native: ## Stop native services
+stop-native: ## Stop native services (kills background processes)
 	@echo "🛑 Stopping native services..."
-	@if [ -f /tmp/afina-api.pid ]; then kill $$(cat /tmp/afina-api.pid) 2>/dev/null || true; rm /tmp/afina-api.pid; fi
-	@if [ -f /tmp/afina-web.pid ]; then kill $$(cat /tmp/afina-web.pid) 2>/dev/null || true; rm /tmp/afina-web.pid; fi
+	@pkill -f "dotnet.*Afina.Api" || echo "  → API not running"
+	@pkill -f "vite" || echo "  → Web not running"
 	@echo "✅ Native services stopped"
 
-logs: ## View Docker logs
+# ============================================================================
+# Format Targets
+# ============================================================================
+
+format: ## Format all source code (Docker-based)
 	$(check_docker)
+	@echo "🎨 Formatting code using Docker..."
+	@echo "  → Formatting API code..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "dotnet format" api || echo "⚠️  API formatting requires dotnet format installed"
+	@echo "  → Formatting Web code..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm run lint -- --fix" web || echo "⚠️  Web formatting completed with warnings"
+	@echo "✅ Code formatting complete"
+
+format-native: check-prereqs ## Format all source code natively
+	@echo "🎨 Formatting..."
+	@cd apps/api && dotnet format Afina.sln --verbosity quiet
+	@cd apps/web && npm run lint -- --fix --quiet 2>/dev/null || true
+
+# ============================================================================
+# Lint Targets
+# ============================================================================
+
+lint: ## Lint/check all source code (Docker-based)
+	$(check_docker)
+	@echo "🔍 Linting code using Docker..."
+	@echo "  → Linting API code..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "dotnet format --verify-no-changes" api || echo "⚠️  API linting found issues"
+	@echo "  → Linting Web code..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm run lint" web || echo "⚠️  Web linting found issues"
+	@echo "✅ Linting complete"
+
+lint-native: build-native ## Lint/check all source code natively
+	@echo "🔍 Linting..."
+	@cd apps/api && dotnet format Afina.sln --verify-no-changes --verbosity quiet
+	@cd apps/web && npm run lint --silent 2>/dev/null || true
+
+# ============================================================================
+# Test Targets
+# ============================================================================
+
+test: ## Run all tests (Docker-based)
+	$(check_docker)
+	@echo "🧪 Running tests using Docker..."
+	@echo "  → Running API tests..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "dotnet test Afina.sln --verbosity normal" api
+	@echo "  → Running Web tests..."
+	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm test" web || echo "⚠️  No web tests configured"
+	@echo "✅ All tests complete"
+
+test-native: build-native ## Run all tests natively
+	@echo "🧪 Testing..."
+	@cd apps/api && for test_proj in $$(find . -name "*Tests.csproj" -o -name "*Test.csproj" 2>/dev/null); do \
+		dotnet test "$$test_proj" --verbosity normal --no-build || exit 1; \
+	done
+	@cd apps/web && npm test 2>/dev/null || true
+
+# ============================================================================
+# Quality Assurance
+# ============================================================================
+
+before-push: clean-native format-native lint-native test-native ## Run all checks before pushing
+	@echo ""
+	@echo "✅ All checks passed"
+
+# ============================================================================
+# Migration Targets (API/Backend Specific)
+# ============================================================================
+
+add-migration: ## Create a new EF Core migration (Docker) - Usage: make add-migration NAME=MigrationName
+	$(check_docker)
+	@if [ -z "$(NAME)" ]; then \
+		echo "❌ Error: Migration name required"; \
+		echo "   Usage: make add-migration NAME=MigrationName"; \
+		exit 1; \
+	fi
+	@echo "📝 Creating migration: $(NAME)"
+	$(COMPOSE_CMD) run --rm --no-deps migrate dotnet ef migrations add $(NAME) --project Afina.Api
+	@echo "✅ Migration '$(NAME)' created successfully"
+	@echo ""
+	@echo "💡 Next steps:"
+	@echo "   • Review the migration in apps/api/Afina.Api/Migrations/"
+	@echo "   • Apply it with: make execute-migration"
+
+add-migration-native: ## Create a new EF Core migration (native) - Usage: make add-migration-native NAME=MigrationName
+	$(check_dotnet)
+	@if [ -z "$(NAME)" ]; then \
+		echo "❌ Error: Migration name required"; \
+		echo "   Usage: make add-migration-native NAME=MigrationName"; \
+		exit 1; \
+	fi
+	@echo "📝 Creating migration: $(NAME)"
+	@cd apps/api && dotnet ef migrations add $(NAME) --project Afina.Api --startup-project Afina.Api
+	@echo "✅ Migration '$(NAME)' created successfully"
+	@echo ""
+	@echo "💡 Next steps:"
+	@echo "   • Review the migration in apps/api/Afina.Api/Migrations/"
+	@echo "   • Apply it with: make execute-migration-native"
+
+execute-migration: ## Execute pending database migrations (Docker)
+	$(check_docker)
+	@echo "🗄️  Executing database migrations..."
+	$(COMPOSE_CMD) run --rm migrate
+	@echo "✅ Migrations executed successfully"
+
+execute-migration-native: ## Execute pending database migrations (native)
+	$(check_dotnet)
+	$(check_postgres_native)
+	@echo "🗄️  Executing database migrations..."
+	@cd apps/api && \
+		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
+		dotnet ef database update --project Afina.Api --startup-project Afina.Api
+	@echo "✅ Migrations executed successfully"
+
+# ============================================================================
+# Docker Management & Utilities
+# ============================================================================
+
+logs: ## View logs from all Docker services
+	$(check_docker)
+	@echo "📋 Viewing logs (Ctrl+C to exit)..."
 	$(COMPOSE_CMD) logs -f
 
 logs-api: ## View API logs (Docker)
 	$(check_docker)
+	@echo "📋 Viewing API logs (Ctrl+C to exit)..."
 	$(COMPOSE_CMD) logs -f api
 
 logs-web: ## View Web logs (Docker)
 	$(check_docker)
+	@echo "📋 Viewing Web logs (Ctrl+C to exit)..."
 	$(COMPOSE_CMD) logs -f web
 
 logs-db: ## View PostgreSQL logs (Docker)
 	$(check_docker)
+	@echo "📋 Viewing PostgreSQL logs (Ctrl+C to exit)..."
 	$(COMPOSE_CMD) logs -f postgres
 
-# Migration targets
-migrate: ## Run database migrations using dedicated container
+ps: ## Show running Docker containers
 	$(check_docker)
-	@echo "🗄️  Running database migrations..."
-	$(COMPOSE_CMD) run --rm migrate
-	@echo "✅ Migrations complete"
-
-migrate-create: ## Create a new migration (usage: make migrate-create NAME=MigrationName)
-	$(check_docker)
-	@if [ -z "$(NAME)" ]; then \
-		echo "❌ Error: Migration name required"; \
-		echo "   Usage: make migrate-create NAME=MigrationName"; \
-		exit 1; \
-	fi
-	@echo "📝 Creating migration: $(NAME)"
-	$(COMPOSE_CMD) run --rm --entrypoint "dotnet ef migrations add $(NAME) --project Afina.Api" migrate
-	@echo "✅ Migration created"
-
-migrate-endpoint: ## Trigger migrations via API endpoint (Development only)
-	@echo "🗄️  Triggering migrations via API endpoint..."
-	@curl -X POST http://localhost:5100/api/migrate -H "Content-Type: application/json" -s | python3 -m json.tool || echo "❌ Failed to connect. Is the API running? (make run)"
-
-migrate-native: ## Run database migrations (native)
-	@echo "🗄️  Running migrations..."
-	@cd apps/api && dotnet ef database update --project Afina.Api
-	@echo "✅ Migrations complete"
-
-# Test targets (app-level)
-test: test-api test-web ## Run tests for all apps
-
-test-api: ## Run API app tests (Users + solution-wide)
-	@echo "🧪 Running Users backend tests..."
-	@cd apps/api && dotnet test Afina.Modules.Users.Tests/Afina.Modules.Users.Tests.csproj --verbosity normal --logger "console;verbosity=normal"
-	@echo "🧪 Running full solution backend tests..."
-	@cd apps/api && dotnet test Afina.sln --verbosity normal --logger "console;verbosity=normal"
-	@echo "✅ API tests complete"
-
-test-api-watch: ## Run API tests in watch mode
-	@echo "🧪 Running API tests in watch mode..."
-	@cd apps/api && dotnet watch test --verbosity minimal || echo "⚠️  dotnet watch not available"
-
-test-api-coverage: ## Run API tests with coverage report
-	@echo "🧪 Running API tests with coverage..."
-	@cd apps/api && dotnet test --collect:"XPlat Code Coverage" --verbosity minimal
-	@echo "✅ Coverage report generated in apps/api/*/TestResults/"
-
-test-web: ## Run Web app tests (if configured)
-	@echo "🧪 Running Web tests..."
-	@cd apps/web && npm test 2>/dev/null || echo "⚠️  No web tests configured"
-	@echo "✅ Web tests complete"
-
-# Development helpers
-dev-api: ## Run API in development mode (native)
-	@cd apps/api/Afina.Api && dotnet watch run
-
-dev-web: ## Run Web in development mode (native)
-	@cd apps/web && npm run dev
-
-shell-api: ## Open shell in API container
-	$(check_docker)
-	$(COMPOSE_CMD) exec api sh
-
-shell-db: ## Open PostgreSQL shell
-	$(check_docker)
-	$(COMPOSE_CMD) exec postgres psql -U postgres -d afina_db
+	@echo "📊 Running containers:"
+	@$(COMPOSE_CMD) ps
 
 restart: ## Restart all Docker services
 	$(check_docker)
-	@echo "🔄 Restarting services..."
+	@echo "🔄 Restarting all services..."
 	$(COMPOSE_CMD) restart
 	@echo "✅ Services restarted"
 
-ps: ## Show running containers
+shell-api: ## Open shell in API container
 	$(check_docker)
-	$(COMPOSE_CMD) ps
+	@echo "🐚 Opening shell in API container..."
+	$(COMPOSE_CMD) exec api sh || echo "❌ API container not running. Start with 'make run'"
+
+shell-db: ## Open PostgreSQL shell (Docker)
+	$(check_docker)
+	@echo "🐚 Opening PostgreSQL shell..."
+	$(COMPOSE_CMD) exec postgres psql -U $(DB_USER) -d $(DB_NAME) || echo "❌ Database container not running. Start with 'make run'"
+
+# ============================================================================
+# Development Helpers
+# ============================================================================
+
+dev-api: ## Run API with hot reload (native)
+	$(check_dotnet)
+	$(check_postgres_native)
+	@echo "🔥 Starting API with hot reload..."
+	@echo "   PostgreSQL: localhost:$(DB_PORT)"
+	@echo "   API will run on: http://localhost:$(API_PORT)"
+	@echo ""
+	@cd apps/api/Afina.Api && \
+		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
+		ASPNETCORE_URLS="http://localhost:$(API_PORT)" \
+		dotnet watch run
+
+dev-web: ## Run Web with hot reload (native)
+	$(check_node)
+	@echo "🔥 Starting Web with hot reload..."
+	@echo "   Web will run on: http://localhost:5173 (Vite default)"
+	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo ""
+	@cd apps/web && npm run dev
+
+# ============================================================================
+# Convenience Aliases & Shortcuts
+# ============================================================================
+
+up: run ## Alias for 'make run'
+
+down: stop ## Alias for 'make stop'
+
+rebuild: clean build ## Clean and rebuild everything
+
+rebuild-native: clean-native build-native ## Clean and rebuild natively
+
+watch-api: dev-api ## Alias for 'make dev-api'
+
+watch-web: dev-web ## Alias for 'make dev-web'

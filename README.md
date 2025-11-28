@@ -1,24 +1,36 @@
-# Afina Platform - Docker & Build Guide
+# Afina Platform
+
+A modern, modular platform for secure credential management and multi-tenancy support built with .NET 9 and React.
 
 ## Prerequisites
 
 Choose one of the following setups:
 
-### Docker/Podman Setup
-- Docker or Podman installed
-- docker-compose or podman-compose installed
+### Docker/Podman Setup (Recommended)
 
-### Native Setup
-- .NET 9 SDK
-- Node.js 25+
-- PostgreSQL 16
+- **Docker** or **Podman** installed
+- **docker-compose** or **podman-compose** installed
+
+### Native Development Setup
+
+- **.NET 9 SDK** - [Download](https://dotnet.microsoft.com/download)
+- **Node.js 25+** - [Download](https://nodejs.org/)
+- **PostgreSQL 16** - Running on `localhost:5432`
 
 ## Quick Start
 
 ### Using Docker/Podman (Recommended)
 
 ```bash
+# Clone and setup
+git clone <repository-url>
+cd afina
+
+# Copy environment file
+cp .env.example .env
+
 # Build and run everything
+make build
 make run
 
 # View logs
@@ -36,82 +48,104 @@ make stop
 # Build applications
 make build-native
 
-# Run applications
-make run-native
+# Run API (in one terminal)
+make run-api-native
 
-# Stop applications
-make stop-native
+# Run Web (in another terminal)
+make run-web-native
+
+# Or use hot reload for development
+make dev-api    # Terminal 1
+make dev-web    # Terminal 2
 ```
 
-## Available Make Commands
+## Available Commands
 
-Run `make help` to see all available commands:
+Run `make help` to see all available commands. Here are the most commonly used:
 
-### Essential Commands
+### Core Commands (Docker by default)
 
-- **`make run`** - Start the full infrastructure with Docker (Web, API, PostgreSQL)
-- **`make run-native`** - Run applications natively (requires local PostgreSQL)
-- **`make stop`** - Stop Docker services
-- **`make stop-native`** - Stop native services
-- **`make build`** - Build Docker images
-- **`make build-native`** - Build applications natively
-- **`make clean`** - Clean everything (Docker and native artifacts)
-- **`make format`** - Format all source code
+| Command            | Description                                                      |
+| ------------------ | ---------------------------------------------------------------- |
+| `make clean`       | Clean all resources (Docker + native artifacts)                  |
+| `make build`       | Build all applications                                           |
+| `make run`         | Run all services                                                 |
+| `make format`      | Format all source code                                           |
+| `make lint`        | Lint/check all source code                                       |
+| `make test`        | Run all tests                                                    |
+| `make before-push` | Run all checks before pushing (clean, format, build, lint, test) |
 
-### Development Commands
+### Native Development Commands
 
-- **`make dev-api`** - Run API with hot reload
-- **`make dev-web`** - Run Web with hot reload
-- **`make logs`** - View all logs
-- **`make logs-api`** - View API logs only
-- **`make logs-web`** - View Web logs only
-- **`make migrate`** - Run database migrations (Docker)
-- **`make migrate-native`** - Run database migrations (native)
+Add `-native` suffix to any core command for native development:
+
+| Command               | Description                  |
+| --------------------- | ---------------------------- |
+| `make clean-native`   | Clean native build artifacts |
+| `make build-native`   | Build applications natively  |
+| `make run-api-native` | Run API natively             |
+| `make run-web-native` | Run Web natively             |
+| `make format-native`  | Format code natively         |
+| `make lint-native`    | Lint code natively           |
+| `make test-native`    | Run tests natively           |
+
+### API/Backend Specific Commands
+
+| Command                                 | Description                     |
+| --------------------------------------- | ------------------------------- |
+| `make add-migration NAME=<name>`        | Create new migration (Docker)   |
+| `make add-migration-native NAME=<name>` | Create new migration (native)   |
+| `make execute-migration`                | Run pending migrations (Docker) |
+| `make execute-migration-native`         | Run pending migrations (native) |
 
 ### Docker Management
 
-- **`make shell-api`** - Open shell in API container
-- **`make shell-db`** - Open PostgreSQL shell
-- **`make restart`** - Restart all services
-- **`make ps`** - Show running containers
+| Command          | Description                 |
+| ---------------- | --------------------------- |
+| `make stop`      | Stop Docker services        |
+| `make restart`   | Restart Docker services     |
+| `make logs`      | View all logs               |
+| `make logs-api`  | View API logs               |
+| `make logs-web`  | View Web logs               |
+| `make logs-db`   | View database logs          |
+| `make ps`        | Show running containers     |
+| `make shell-api` | Open shell in API container |
+| `make shell-db`  | Open PostgreSQL shell       |
+
+### Development Helpers
+
+| Command            | Description             |
+| ------------------ | ----------------------- |
+| `make dev-api`     | Run API with hot reload |
+| `make dev-web`     | Run Web with hot reload |
+| `make stop-native` | Stop native services    |
 
 ## Service URLs
 
-After running `make run`:
+After running `make run` (Docker):
 
 - **Web UI**: http://localhost:3000
 - **API**: http://localhost:5100
 - **PostgreSQL**: localhost:5432
 
-After running `make run-native`:
+After running native commands:
 
-- **Web UI**: http://localhost:5173
+- **Web UI**: http://localhost:5173 (Vite default)
 - **API**: http://localhost:5100
-
-## Docker Compose Details
-
-The `docker-compose.yml` includes:
-
-- **postgres**: PostgreSQL 16 with persistent volume
-- **api**: .NET API with automatic migrations
-- **web**: React SPA served by nginx
-
-### Podman Compatibility
-
-The compose file is fully compatible with Podman. The Makefile automatically detects whether you're using Docker or Podman.
 
 ## Development Workflow
 
 ### Docker-based Development
 
 ```bash
-# Start infrastructure
+# Start all services
 make run
 
 # View logs in real-time
 make logs
 
-# Make code changes (they won't be hot-reloaded in containers)
+# Make code changes
+# (Rebuild required for changes to take effect)
 
 # Rebuild and restart
 make build
@@ -121,7 +155,7 @@ make restart
 make stop
 ```
 
-### Native Development (with hot reload)
+### Native Development (Recommended for active development)
 
 ```bash
 # Terminal 1 - API with hot reload
@@ -130,22 +164,73 @@ make dev-api
 # Terminal 2 - Web with hot reload
 make dev-web
 
-# Code changes will auto-reload
+# Code changes will auto-reload!
+```
+
+### Database Migrations
+
+#### Create a new migration
+
+```bash
+# Docker
+make add-migration NAME=AddUserTable
+
+# Native
+make add-migration-native NAME=AddUserTable
+```
+
+#### Apply migrations
+
+```bash
+# Docker
+make execute-migration
+
+# Native
+make execute-migration-native
+```
+
+## Testing
+
+```bash
+# Run all tests (Docker)
+make test
+
+# Run all tests (native)
+make test-native
+
+# API tests only
+cd apps/api && dotnet test
+
+# Web tests only
+cd apps/web && npm test
+```
+
+## Code Quality
+
+### Format code
+
+```bash
+# Format all code (Docker)
+make format
+
+# Format all code (native)
+make format-native
+```
+
+### Lint code
+
+```bash
+# Lint all code (Docker)
+make lint
+
+# Lint all code (native)
+make lint-native
 ```
 
 ## Database Management
 
-### Run Migrations (Docker)
-```bash
-make migrate
-```
-
-### Run Migrations (Native)
-```bash
-make migrate-native
-```
-
 ### Access Database Shell
+
 ```bash
 # Docker
 make shell-db
@@ -154,20 +239,23 @@ make shell-db
 psql -h localhost -U postgres -d afina_db
 ```
 
+### Verify PostgreSQL is running
+
+```bash
+# Check if PostgreSQL is ready
+pg_isready -h localhost -p 5432
+```
+
 ## Cleaning Up
 
-### Clean Docker Resources
 ```bash
-make clean-docker
-```
+# Clean Docker resources only
+docker-compose down -v --remove-orphans
 
-### Clean Native Build Artifacts
-```bash
+# Clean native artifacts only
 make clean-native
-```
 
-### Clean Everything
-```bash
+# Clean everything
 make clean
 ```
 
@@ -175,42 +263,76 @@ make clean
 
 ### Port Conflicts
 
-If ports 3000, 5100, or 5432 are already in use, modify the port mappings in `docker-compose.yml`.
+If ports 3000, 5100, or 5432 are already in use:
+
+1. Stop the conflicting service
+2. Or modify the port mappings in `.env` file
 
 ### Podman on macOS
 
 If using Podman on macOS, ensure the Podman machine is running:
+
 ```bash
 podman machine start
 ```
 
 ### Database Connection Issues
 
-Ensure PostgreSQL is healthy:
+For Docker:
+
 ```bash
 make logs-db
 ```
 
-For native development, verify PostgreSQL is running:
+For native development:
+
 ```bash
 pg_isready -h localhost -p 5432
 ```
 
-## Building for Production
+### Build Errors
+
+Try a clean rebuild:
 
 ```bash
-# Build optimized Docker images
-make build
+# Docker
+make rebuild
 
-# Or build native artifacts
-make build-native
-cd apps/web && npm run build
+# Native
+make rebuild-native
 ```
 
 ## Architecture
 
-- **Multi-stage Docker builds** for optimized image sizes
-- **Health checks** for PostgreSQL
-- **Automatic database migrations** on API startup
-- **Nginx** for serving the React SPA
-- **Persistent volumes** for database data
+- **Modular Architecture**: Clean separation of concerns with module-based design
+- **Multi-stage Docker builds**: Optimized image sizes
+- **Health checks**: Automatic service health monitoring
+- **Automatic migrations**: Database migrations on API startup (Docker)
+- **Hot reload**: Native development with instant code updates
+- **Persistent volumes**: Database data survives container restarts
+
+## Project Structure
+
+```
+afina/
+├── apps/
+│   ├── api/              # .NET 9 Backend
+│   │   ├── Afina.Api/    # Main API project
+│   │   └── Afina.Modules.*/ # Feature modules
+│   └── web/              # React Frontend
+├── docs/                 # Documentation
+├── docker-compose.yml    # Docker orchestration
+├── Makefile             # Build & run commands
+└── README.md            # This file
+```
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Run quality checks: `make before-push`
+4. Submit a pull request
+
+## License
+
+See [LICENSE](LICENSE) file for details.

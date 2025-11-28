@@ -14,6 +14,8 @@ COPY Afina.Modules.Tenant/Afina.Modules.Tenant.csproj Afina.Modules.Tenant/
 COPY Afina.Modules.Vault/Afina.Modules.Vault.csproj Afina.Modules.Vault/
 COPY Afina.Modules.Audit/Afina.Modules.Audit.csproj Afina.Modules.Audit/
 COPY Afina.Modules.Encryption/Afina.Modules.Encryption.csproj Afina.Modules.Encryption/
+COPY Afina.Modules.Users/Afina.Modules.Users.csproj Afina.Modules.Users/
+COPY Afina.Modules.Users.Tests/Afina.Modules.Users.Tests.csproj Afina.Modules.Users.Tests/
 
 # Restore dependencies
 RUN dotnet restore
