@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Afina.sln",
+			"type": "shell",
+			"command": "cd apps/api && dotnet build Afina.sln",
+			"group": "build"
+		},
+		{
+			"label": "Build Afina.sln",
+			"type": "shell",
+			"command": "cd apps/api && dotnet build Afina.sln",
+			"isBackground": false,
+			"problemMatcher": [
+				"$msbuild"
+			],
+			"group": "build"
+		}
+	]
+}

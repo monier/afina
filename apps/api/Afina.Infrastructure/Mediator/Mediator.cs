@@ -10,17 +10,19 @@ namespace Afina.Infrastructure.Mediator;
 
 internal sealed class Mediator : IMediator
 {
-    private readonly IServiceProvider _provider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private static readonly ConcurrentDictionary<Type, Type> HandlerTypeCache = new();
 
-    public Mediator(IServiceProvider provider) => _provider = provider;
+    public Mediator(IServiceScopeFactory scopeFactory) => _scopeFactory = scopeFactory;
 
     public async Task<TResponse> CallAsync<TResponse>(IRequest<TResponse> request, CancellationToken ct = default)
     {
         if (request is null) throw new ArgumentNullException(nameof(request));
         var requestType = request.GetType();
         var handlerType = HandlerTypeCache.GetOrAdd(requestType, ResolveHandlerType);
-        var handler = _provider.GetService(handlerType);
+
+        using var scope = _scopeFactory.CreateScope();
+        var handler = scope.ServiceProvider.GetService(handlerType);
         if (handler is null)
             throw new InvalidOperationException($"No handler registered for request type {requestType.FullName}");
 

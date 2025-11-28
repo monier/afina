@@ -40,26 +40,91 @@ The Afina API follows a **Modular Monolith** architecture with **Vertical Slices
 
 ### Module (Vertical Slice) Structure
 
-Each module (e.g., `Afina.Modules.Users`) is fully self-contained and organized around a `Features` root folder implementing the vertical slice pattern. Concepts are separated by concern, not by layered abstractions.
+Each module (e.g., `Afina.Modules.Users`) is organized around a `Features` root folder. We implement Vertical Slice Architecture at the feature level, with a flattened layout: every feature is a single folder with individual files for requests, responses, endpoints, and handlers. Shared, cross-feature code is centralized under `Shared/`.
 
 ```
-Afina.Modules.<SliceName>/
-    Features/
-        Endpoints/        # Minimal API endpoint classes; thin – delegate to handlers.
-        Handlers/         # Request handlers (business use cases) implementing IRequest<T> pattern.
-        Validators/       # Fluent validation or custom validators bound to handler/request types.
-        Domains/          # Rich domain models, value objects, domain services (pure business logic).
-        Services/         # Orchestration, cross-cutting integration (e.g., external APIs, encryption calls).
-        Persistence/      # Repository abstractions or query objects – using entities & DbContext from Afina.Data.
+Afina.Modules.<ModuleName>/
+  Features/
+    <FeatureName>/
+      <FeatureName>Request.cs
+      <FeatureName>Response.cs
+      <FeatureName>Endpoint.cs
+      <FeatureName>Handler.cs
+  Shared/
+    Persistence/
+      ... repositories used across features ...
+    Services/
+      ... services used across features ...
 ```
 
-Guidelines:
+**Example: Users Module Structure (Flattened with Separate Request/Response Files)**
 
-- Endpoints perform request binding and immediately call `_mediator.CallAsync(request)`.
-- Handlers contain application logic; they depend on domain models and repositories.
-- Repositories operate only on `Afina.Data` entities; mapping to domain models occurs in the handler or persistence layer.
-- Cross-module calls MUST use the mediator abstraction; avoid direct service references that cause circular dependencies.
-- No leaking of internal slice types outside the module – only contracts explicitly published through `Afina.Contracts` for third-party or external integrations.
+```
+Afina.Modules.Users/
+  Features/
+    Login/
+      LoginRequest.cs
+      LoginResponse.cs
+      LoginEndpoint.cs
+      LoginHandler.cs
+    Register/
+      RegisterRequest.cs
+      RegisterResponse.cs
+      RegisterEndpoint.cs
+      RegisterHandler.cs
+    RefreshToken/
+      RefreshTokenRequest.cs
+      RefreshTokenResponse.cs
+      RefreshTokenEndpoint.cs
+      RefreshTokenHandler.cs
+    GetCurrentUser/
+      GetCurrentUserRequest.cs
+      GetCurrentUserResponse.cs
+      GetCurrentUserEndpoint.cs
+      GetCurrentUserHandler.cs
+    DeleteUser/
+      DeleteUserRequest.cs
+      DeleteUserEndpoint.cs
+      DeleteUserHandler.cs
+    ExportUserData/
+      ExportUserDataRequest.cs
+      ExportUserDataResponse.cs
+      ExportUserDataEndpoint.cs
+      ExportUserDataHandler.cs
+    ListApiKeys/
+      ListApiKeysRequest.cs
+      ListApiKeysResponse.cs
+      ListApiKeysEndpoint.cs
+      ListApiKeysHandler.cs
+    CreateApiKey/
+      CreateApiKeyRequest.cs
+      CreateApiKeyResponse.cs
+      CreateApiKeyEndpoint.cs
+      CreateApiKeyHandler.cs
+    DeleteApiKey/
+      DeleteApiKeyRequest.cs
+      DeleteApiKeyEndpoint.cs
+      DeleteApiKeyHandler.cs
+
+  Shared/
+    Persistence/
+      IUserRepository.cs, UsersRepository.cs
+      IUserSessionsRepository.cs, UserSessionsRepository.cs
+      IApiKeyRepository.cs, ApiKeyRepository.cs
+    Services/
+      ITokenService.cs, JwtTokenService.cs, TokenService.cs
+```
+
+**Guidelines:**
+
+- **Feature Isolation**: Each feature folder contains everything needed for its use case - separate files for Request, Response, Endpoint, and Handler.
+- **Request/Response Separation**: Request and Response classes are extracted into separate files for better readability and maintainability.
+- **Minimize Shared Code**: Only extract to `Shared/` when truly cross-feature (repositories, services, etc.).
+- **Endpoints**: Bind request and delegate to `_mediator.CallAsync(request)`.
+- **Handlers**: Own application logic, use repositories, and return responses.
+- **Data Access**: Repositories work on `Afina.Data` entities.
+- **Cross-Module Communication**: Use the mediator abstraction.
+- **Encapsulation**: Do not leak internal feature types outside the module.
 
 ### Data Layer
 
@@ -90,86 +155,66 @@ Registration:
 
 ```csharp
 // In Program.cs
-builder.Services.AddMediator();
-```
+# Architecture Overview
 
-Usage in an Endpoint:
+This document provides a high-level overview of Afina's architecture and how Vertical Slices are organized, with emphasis on the updated structure for the Users module.
 
-```csharp
-public class LoginEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-        => app.MapPost("/api/v1/auth/login", HandleAsync);
+## Vertical Slice Architecture (VSA)
 
-    private static async Task<IResult> HandleAsync(LoginRequest request, IMediator mediator, CancellationToken ct)
-    {
-        var response = await mediator.CallAsync(request, ct);
-        return Results.Ok(response);
-    }
-}
-```
+We have migrated from feature-group folders (e.g., `Authentication/`, `UserProfile/`, `ApiKeys/` each with `Endpoints/` and `Handlers/` subfolders) to a flattened, per-feature layout. Each feature now lives in a single folder with separate files for Request, Response, Endpoint, and Handler. Cross-feature code is centralized under `Shared/`.
 
-Handler Example:
+- Per-feature folders: `apps/api/Afina.Modules.Users/Features/{FeatureName}/`
+- Typical contents: `{FeatureName}Request.cs`, `{FeatureName}Response.cs`, `{FeatureName}Endpoint.cs`, `{FeatureName}Handler.cs`
+- Cross-feature code: `apps/api/Afina.Modules.Users/Shared/` (Persistence and Services)
+- `Program.cs`: Maps endpoints using flattened namespaces and configures DI to use Shared repositories and services
 
-```csharp
-public sealed class LoginRequest : IRequest<LoginResponse>
-{
-    public string Username { get; init; } = string.Empty;
-    public string AuthHash { get; init; } = string.Empty;
-}
+### Example: Users Module Structure
 
-public sealed class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
-{
-    private readonly IUserRepository _users;
-    private readonly ITokenService _tokens;
-    public LoginHandler(IUserRepository users, ITokenService tokens)
-        => (_users, _tokens) = (users, tokens);
+`apps/api/Afina.Modules.Users/`
 
-    public async Task<LoginResponse> HandleAsync(LoginRequest request, CancellationToken ct)
-    {
-        var user = await _users.GetByUsernameAsync(request.Username, ct) ?? throw new UnauthorizedAccessException();
-        // verify hash, issue tokens
-        return _tokens.CreateLoginResponse(user);
-    }
-}
-```
+- `Features/`
+    - `Login/` → `LoginRequest.cs`, `LoginResponse.cs`, `LoginEndpoint.cs`, `LoginHandler.cs`
+    - `Register/` → `RegisterRequest.cs`, `RegisterResponse.cs`, `RegisterEndpoint.cs`, `RegisterHandler.cs`
+    - `RefreshToken/` → `RefreshTokenRequest.cs`, `RefreshTokenResponse.cs`, `RefreshTokenEndpoint.cs`, `RefreshTokenHandler.cs`
+    - `GetCurrentUser/` → `GetCurrentUserRequest.cs`, `GetCurrentUserResponse.cs`, `GetCurrentUserEndpoint.cs`, `GetCurrentUserHandler.cs`
+    - `DeleteUser/` → `DeleteUserRequest.cs`, `DeleteUserEndpoint.cs`, `DeleteUserHandler.cs`
+    - `ExportUserData/` → `ExportUserDataRequest.cs`, `ExportUserDataResponse.cs`, `ExportUserDataEndpoint.cs`, `ExportUserDataHandler.cs`
+    - `ListApiKeys/` → `ListApiKeysRequest.cs`, `ListApiKeysResponse.cs`, `ListApiKeysEndpoint.cs`, `ListApiKeysHandler.cs`
+    - `CreateApiKey/` → `CreateApiKeyRequest.cs`, `CreateApiKeyResponse.cs`, `CreateApiKeyEndpoint.cs`, `CreateApiKeyHandler.cs`
+    - `DeleteApiKey/` → `DeleteApiKeyRequest.cs`, `DeleteApiKeyEndpoint.cs`, `DeleteApiKeyHandler.cs`
 
-Benefits:
+- `Shared/`
+    - `Persistence/`
+        - `IUserRepository.cs`, `UsersRepository.cs`
+        - `IUserSessionsRepository.cs`, `UserSessionsRepository.cs`
+        - `IApiKeyRepository.cs`, `ApiKeyRepository.cs`
+    - `Services/`
+        - `ITokenService.cs`, `JwtTokenService.cs`, `TokenService.cs`
 
-- Decoupled cross-module invocation.
-- Explicit request/response contracts per use case.
-- Easy extension with pipeline behaviors (validation, audit logging) later.
+### Rationale
 
-## Technology Stack
+- **Clarity**: Feature code sits together with clear separation of concerns (Request, Response, Endpoint, Handler).
+- **Readability**: Extracting Request and Response into separate files improves code navigation and understanding.
+- **Isolation**: Slices are self-contained; shared persistence and services are explicit.
+- **Maintainability**: Individual files for each concern make features easier to modify and test.
+- **Less boilerplate**: Removes redundant nested folder structures; faster navigation and maintenance.
 
-- **Framework**: .NET 8 (ASP.NET Core)
-- **Database**: PostgreSQL
-- **ORM**: Entity Framework Core
-- **API**: Minimal APIs
+## Backend Components
 
-* **Frontend**: React, TypeScript, Vite, Styled-Components, Tailwind CSS.
-* **Containerization**: Docker, Docker Compose.
-* **Testing**: xUnit, Testcontainers.
+- API: .NET minimal APIs organized by modules (Users, Identity, Tenant, Vault).
+- Infrastructure: Persistence, mediator, and shared services via DI.
+- Modules: Each module owns its features; cross-feature persistence/contracts live in `Shared/`.
 
-## Zero-Knowledge / Pluggable Encryption Architecture
+## Frontend Components
 
-- **Server-Side Encryption**: Data is encrypted by a dedicated Encryption Service before being stored.
-- **Pluggable**: Tenants can define their own Encryption Service URL.
-- **Key Management**: Keys are managed by the Encryption Service, not the main application.
-- **Versioning & Rotation**: Data includes metadata about the key version and algorithm used.
+- Web: Vite + TypeScript SPA with feature-oriented pages and services.
+- Integration: Communicates with endpoints mapped per feature.
 
-## Diagram
+## Cross-Cutting Concerns
 
-```mermaid
-graph TD
-    Client[Web Client / Mobile App] -->|HTTPS/REST| API[API Gateway / Backend]
-    subgraph "Modular Monolith Backend"
-        Identity[Identity Module]
-        Tenant[Tenant Module]
-        Vault[Vault Module]
-        Audit[Audit Module]
-    end
-
+- Security: Authentication, authorization, and encryption modules.
+- Observability: Audit logs and tracing hooks.
+- Deployment: Docker Compose for API and web; Nginx serves static assets.
     subgraph "Encryption Layer"
         ES[Encryption Service (Default or Custom)]
     end

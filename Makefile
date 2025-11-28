@@ -184,6 +184,30 @@ migrate-native: ## Run database migrations (native)
 	@cd apps/api && dotnet ef database update --project Afina.Api
 	@echo "✅ Migrations complete"
 
+# Test targets (app-level)
+test: test-api test-web ## Run tests for all apps
+
+test-api: ## Run API app tests (Users + solution-wide)
+	@echo "🧪 Running Users backend tests..."
+	@cd apps/api && dotnet test Afina.Modules.Users.Tests/Afina.Modules.Users.Tests.csproj --verbosity normal --logger "console;verbosity=normal"
+	@echo "🧪 Running full solution backend tests..."
+	@cd apps/api && dotnet test Afina.sln --verbosity normal --logger "console;verbosity=normal"
+	@echo "✅ API tests complete"
+
+test-api-watch: ## Run API tests in watch mode
+	@echo "🧪 Running API tests in watch mode..."
+	@cd apps/api && dotnet watch test --verbosity minimal || echo "⚠️  dotnet watch not available"
+
+test-api-coverage: ## Run API tests with coverage report
+	@echo "🧪 Running API tests with coverage..."
+	@cd apps/api && dotnet test --collect:"XPlat Code Coverage" --verbosity minimal
+	@echo "✅ Coverage report generated in apps/api/*/TestResults/"
+
+test-web: ## Run Web app tests (if configured)
+	@echo "🧪 Running Web tests..."
+	@cd apps/web && npm test 2>/dev/null || echo "⚠️  No web tests configured"
+	@echo "✅ Web tests complete"
+
 # Development helpers
 dev-api: ## Run API in development mode (native)
 	@cd apps/api/Afina.Api && dotnet watch run

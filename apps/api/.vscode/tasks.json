@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Afina solution",
+			"type": "shell",
+			"command": "dotnet build Afina.sln",
+			"group": "build"
+		}
+	]
+}

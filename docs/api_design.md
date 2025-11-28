@@ -7,48 +7,60 @@ Responses are in JSON format.
 
 ## Vertical Slice Endpoint Pattern
 
-Endpoints are thin and delegate directly to handlers via the custom mediator (`IMediator`). Each action has a dedicated request object implementing `IRequest<TResponse>`. Example:
+Endpoints are thin and delegate directly to handlers via the custom mediator (`IMediator`). We use a flattened per-feature layout: each feature lives in `apps/api/Afina.Modules.Users/Features/{FeatureName}/` with separate files for Request, Response, Endpoint, and Handler. Cross-feature persistence and services sit in `apps/api/Afina.Modules.Users/Shared/`.
 
-```csharp
-app.MapPost("/api/v1/auth/login", (LoginRequest req, IMediator mediator, CancellationToken ct)
-    => mediator.CallAsync(req, ct));
-```
+## Users Module: Flattened Features with Request/Response Files
 
-Validation, domain logic, and persistence access occur inside the handler.
+### Endpoint → Feature Path Mapping
 
-## Authentication
+Each feature contains:
 
-- **POST /api/v1/auth/register**
-  - Body: `{ username, passwordHash, salt, passwordHint }`
-  - Response: `{ token, refreshToken, user }`
+- `{FeatureName}Request.cs` - Request DTO
+- `{FeatureName}Response.cs` - Response DTO (when applicable)
+- `{FeatureName}Endpoint.cs` - HTTP endpoint mapping
+- `{FeatureName}Handler.cs` - Business logic handler
+
+**Authentication & User Management:**
+
 - **POST /api/v1/auth/login**
-  - Body: `{ username, authHash }`
-  - Response: `{ token, refreshToken, user }`
-  - Handler: `LoginHandler` (in `Afina.Modules.Users/Features/Handlers`)
+  - Files: `Features/Login/LoginRequest.cs`, `LoginResponse.cs`, `LoginEndpoint.cs`, `LoginHandler.cs`
+- **POST /api/v1/auth/register**
+  - Files: `Features/Register/RegisterRequest.cs`, `RegisterResponse.cs`, `RegisterEndpoint.cs`, `RegisterHandler.cs`
 - **POST /api/v1/auth/refresh**
-  - Body: `{ refreshToken }`
-- **POST /api/v1/auth/mfa/setup**
-  - Response: `{ secret, qrCodeUrl }`
-- **POST /api/v1/auth/mfa/verify**
-  - Body: `{ code }`
+  - Files: `Features/RefreshToken/RefreshTokenRequest.cs`, `RefreshTokenResponse.cs`, `RefreshTokenEndpoint.cs`, `RefreshTokenHandler.cs`
 
-## Users
+**User Profile:**
 
 - **GET /api/v1/users/me**
-  - Response: User profile details (including `createdAt`, `updatedAt`).
-  - Handler: `GetCurrentUserHandler`
+  - Files: `Features/GetCurrentUser/GetCurrentUserRequest.cs`, `GetCurrentUserResponse.cs`, `GetCurrentUserEndpoint.cs`, `GetCurrentUserHandler.cs`
 - **DELETE /api/v1/users/me**
-  - Action: Deletes user account and individual tenant.
+  - Files: `Features/DeleteUser/DeleteUserRequest.cs`, `DeleteUserEndpoint.cs`, `DeleteUserHandler.cs`
+  - Note: Uses `EmptyResponse` for response (void operation)
 - **POST /api/v1/users/me/export**
-  - Response: JSON/CSV export of all user data.
+  - Files: `Features/ExportUserData/ExportUserDataRequest.cs`, `ExportUserDataResponse.cs`, `ExportUserDataEndpoint.cs`, `ExportUserDataHandler.cs`
 
-### API Keys
+**API Keys:**
 
 - **GET /api/v1/users/me/api-keys**
+  - Files: `Features/ListApiKeys/ListApiKeysRequest.cs`, `ListApiKeysResponse.cs`, `ListApiKeysEndpoint.cs`, `ListApiKeysHandler.cs`
 - **POST /api/v1/users/me/api-keys**
-  - Body: `{ name, scopes, tenantIds }`
-  - Response: `{ id, name, secret }` (Secret shown only once)
-- **DELETE /api/v1/users/me/api-keys/{id}**
+  - Files: `Features/CreateApiKey/CreateApiKeyRequest.cs`, `CreateApiKeyResponse.cs`, `CreateApiKeyEndpoint.cs`, `CreateApiKeyHandler.cs`
+  - Response: `{ id, keyPrefix, secret }` (Secret shown only once)
+- **DELETE /api/v1/users/me/api-keys/{keyId}**
+  - Files: `Features/DeleteApiKey/DeleteApiKeyRequest.cs`, `DeleteApiKeyEndpoint.cs`, `DeleteApiKeyHandler.cs`
+  - Note: Uses `EmptyResponse` for response (void operation)
+
+### Shared Components (Users Module)
+
+**Persistence:**
+
+- `Shared/Persistence/IUserRepository.cs`, `UsersRepository.cs`
+- `Shared/Persistence/IUserSessionsRepository.cs`, `UserSessionsRepository.cs`
+- `Shared/Persistence/IApiKeyRepository.cs`, `ApiKeyRepository.cs`
+
+**Services:**
+
+- `Shared/Services/ITokenService.cs`, `JwtTokenService.cs`, `TokenService.cs`
 
 ## Tenants
 
