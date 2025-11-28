@@ -1,16 +1,19 @@
 # Frontend Design
 
 ## Overview
+
 The frontend is a Single Page Application (SPA) built with React and Vite. It emphasizes security, performance, and a premium user experience.
 
 ## Technology Stack
-*   **Framework**: React (Latest)
-*   **Build Tool**: Vite
-*   **Styling**: Tailwind CSS (Utility) + Styled-Components (Component encapsulation)
-*   **State Management**: React Context + TanStack Query (React Query)
-*   **Routing**: React Router
+
+- **Framework**: React (Latest)
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS (Utility) + Styled-Components (Component encapsulation)
+- **State Management**: React Context + TanStack Query (React Query)
+- **Routing**: React Router
 
 ## Project Structure
+
 ```
 src/
 ├── assets/          # Static assets
@@ -30,11 +33,17 @@ src/
 └── App.tsx
 ```
 
+## Vertical Slice Alignment
+
+Frontend feature folders map 1:1 to backend slices (e.g., `features/auth` -> Users slice endpoints). API clients call minimal endpoints that immediately invoke handlers via mediator. This keeps DTO evolution localized; when a handler changes its request/response contract, only the corresponding feature service and types need updating.
+
 ## Key Components
-*   **VaultGrid**: Displays vault items with type-specific icons.
-*   **SecureInput**: Input field that prevents clipboard copying for sensitive data (optional).
+
+- **VaultGrid**: Displays vault items with type-specific icons.
+- **SecureInput**: Input field that prevents clipboard copying for sensitive data (optional).
 
 ## UI/UX Guidelines
-*   **Theme**: Dark mode by default, high contrast for readability.
-*   **Responsiveness**: Mobile-first design using Tailwind breakpoints.
-*   **Feedback**: Loading skeletons, toast notifications for actions.
+
+- **Theme**: Dark mode by default, high contrast for readability.
+- **Responsiveness**: Mobile-first design using Tailwind breakpoints.
+- **Feedback**: Loading skeletons, toast notifications for actions.
