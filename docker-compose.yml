@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -30,6 +28,10 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=${DB_HOST};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
       - CorsOrigins=${CORS_ORIGINS}
+      - LOGGING_PROVIDER=${LOGGING_PROVIDER}
+      - GRAFANA_LOKI_ENDPOINT=${GRAFANA_LOKI_ENDPOINT:-http://loki:3100}
+      - GRAFANA_SERVICE_NAME=${GRAFANA_SERVICE_NAME:-afina-api}
+      - GRAFANA_SERVICE_VERSION=${GRAFANA_SERVICE_VERSION:-1.0.0}
     ports:
       - "${API_PORT}:8080"
     depends_on:
@@ -69,8 +71,51 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
 
+  # Grafana stack for observability (optional, use profile 'observability')
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: afina-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./config/loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    networks:
+      - afina-network
+    profiles:
+      - observability
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:3100/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: afina-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+    networks:
+      - afina-network
+    profiles:
+      - observability
+
 volumes:
   postgres-data:
+    driver: local
+  loki-data:
+    driver: local
+  grafana-data:
     driver: local
 
 networks:

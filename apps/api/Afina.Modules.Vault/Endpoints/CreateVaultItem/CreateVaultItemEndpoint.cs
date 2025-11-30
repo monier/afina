@@ -3,6 +3,7 @@ using Afina.Modules.Vault.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Vault.Endpoints.CreateVaultItem;
 
@@ -22,12 +23,31 @@ public class CreateVaultItemEndpoint : IEndpoint
         Guid tenantId,
         CreateVaultItemRequest request,
         VaultService vaultService,
+        ILogger<CreateVaultItemEndpoint> logger,
         CancellationToken ct)
     {
+        logger.LogInformation(
+            "Create vault item endpoint called for tenant {TenantId}, type: {ItemType}",
+            tenantId,
+            request.Type
+        );
+
         // TODO: Get current user ID from authentication context
         var currentUserId = Guid.NewGuid(); // Placeholder
 
-        var response = await vaultService.CreateVaultItemAsync(tenantId, request, currentUserId, ct);
-        return Results.Ok(response);
+        try
+        {
+            var response = await vaultService.CreateVaultItemAsync(tenantId, request, currentUserId, ct);
+            return Results.Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Error creating vault item for tenant {TenantId}",
+                tenantId
+            );
+            throw;
+        }
     }
 }

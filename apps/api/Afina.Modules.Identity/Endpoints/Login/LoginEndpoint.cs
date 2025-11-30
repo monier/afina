@@ -29,7 +29,7 @@ public class LoginEndpoint : IEndpoint
             var response = await authService.LoginAsync(request, ct);
             return Results.Ok(response);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Results.Unauthorized();
         }

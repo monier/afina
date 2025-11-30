@@ -7,6 +7,7 @@ using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Users.Features.DeleteUser;
 
@@ -24,13 +25,30 @@ public class DeleteUserEndpoint : IEndpoint
     private static async Task<IResult> HandleAsync(
         ClaimsPrincipal user,
         IMediator mediator,
+        ILogger<DeleteUserEndpoint> logger,
         CancellationToken ct)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null) return Results.Unauthorized();
+        if (userIdClaim is null)
+        {
+            logger.LogWarning("Delete user called without user ID claim");
+            return Results.Unauthorized();
+        }
 
-        var req = new DeleteUserRequest { UserId = Guid.Parse(userIdClaim) };
-        await mediator.CallAsync(req, ct);
-        return Results.NoContent();
+        var userId = Guid.Parse(userIdClaim);
+        logger.LogInformation("Delete user endpoint called for user {UserId}", userId);
+
+        try
+        {
+            var req = new DeleteUserRequest { UserId = userId };
+            await mediator.CallAsync(req, ct);
+            logger.LogInformation("User {UserId} deleted via endpoint", userId);
+            return Results.NoContent();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting user {UserId}", userId);
+            throw;
+        }
     }
 }

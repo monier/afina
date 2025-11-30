@@ -7,6 +7,7 @@ using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Users.Features.ExportUserData;
 
@@ -24,13 +25,30 @@ public class ExportUserDataEndpoint : IEndpoint
     private static async Task<IResult> HandleAsync(
         ClaimsPrincipal user,
         IMediator mediator,
+        ILogger<ExportUserDataEndpoint> logger,
         CancellationToken ct)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null) return Results.Unauthorized();
+        if (userIdClaim is null)
+        {
+            logger.LogWarning("Export user data called without user ID claim");
+            return Results.Unauthorized();
+        }
 
-        var req = new ExportUserDataRequest { UserId = Guid.Parse(userIdClaim) };
-        var res = await mediator.CallAsync(req, ct);
-        return Results.Ok(res);
+        var userId = Guid.Parse(userIdClaim);
+        logger.LogInformation("Export user data endpoint called for user {UserId}", userId);
+
+        try
+        {
+            var req = new ExportUserDataRequest { UserId = userId };
+            var res = await mediator.CallAsync(req, ct);
+            logger.LogInformation("User data exported successfully for user {UserId}", userId);
+            return Results.Ok(res);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error exporting user data for user {UserId}", userId);
+            throw;
+        }
     }
 }
