@@ -6,6 +6,7 @@ using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Users.Features.RefreshToken;
 
@@ -25,16 +26,26 @@ public class RefreshTokenEndpoint : IEndpoint
     private static async Task<IResult> HandleAsync(
         RefreshTokenRequest request,
         IMediator mediator,
+        ILogger<RefreshTokenEndpoint> logger,
         CancellationToken ct)
     {
+        logger.LogInformation("Refresh token endpoint called");
+
         try
         {
             var response = await mediator.CallAsync(request, ct);
+            logger.LogInformation("Token refreshed successfully");
             return Results.Ok(response);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
+            logger.LogWarning(ex, "Token refresh failed - unauthorized");
             return Results.Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error during token refresh");
+            throw;
         }
     }
 }

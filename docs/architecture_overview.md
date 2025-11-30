@@ -34,7 +34,7 @@ The Afina API follows a **Modular Monolith** architecture with **Vertical Slices
 ### Core & Infrastructure
 
 - **Afina.Core**: Contains common business logic shared between modules.
-- **Afina.Infrastructure**: Handles cross-cutting concerns (logging, serialization, etc.) not directly related to business logic.
+- **Afina.Infrastructure**: Handles cross-cutting concerns (structured logging, serialization, etc.).
 - **Afina.Contracts**: Defines public interfaces and contracts exposed by Afina services.
 - **Afina.Data**: A shared library containing all Entity Framework Core entities and migrations.
 
@@ -213,7 +213,7 @@ We have migrated from feature-group folders (e.g., `Authentication/`, `UserProfi
 ## Cross-Cutting Concerns
 
 - Security: Authentication, authorization, and encryption modules.
-- Observability: Audit logs and tracing hooks.
+- Logging: Serilog with Grafana + Loki integration.
 - Deployment: Docker Compose for API and web; Nginx serves static assets.
     subgraph "Encryption Layer"
         ES[Encryption Service (Default or Custom)]

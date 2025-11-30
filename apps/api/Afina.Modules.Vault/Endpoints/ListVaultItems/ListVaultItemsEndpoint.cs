@@ -3,6 +3,7 @@ using Afina.Modules.Vault.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Vault.Endpoints.ListVaultItems;
 
@@ -21,9 +22,20 @@ public class ListVaultItemsEndpoint : IEndpoint
     private static async Task<IResult> HandleAsync(
         Guid tenantId,
         VaultService vaultService,
+        ILogger<ListVaultItemsEndpoint> logger,
         CancellationToken ct)
     {
-        var response = await vaultService.ListVaultItemsAsync(tenantId, ct);
-        return Results.Ok(response);
+        logger.LogInformation("List vault items endpoint called for tenant {TenantId}", tenantId);
+
+        try
+        {
+            var response = await vaultService.ListVaultItemsAsync(tenantId, ct);
+            return Results.Ok(response);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error listing vault items for tenant {TenantId}", tenantId);
+            throw;
+        }
     }
 }

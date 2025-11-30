@@ -412,14 +412,27 @@ postgresql:
       cpu: 2000m
 ```
 
-## Monitoring & Observability
+## Logging
 
-### Recommended Tools
+The platform includes optional Grafana + Loki logging:
 
-- **Logs**: ELK Stack (Elasticsearch, Logstash, Kibana) or Loki
-- **Metrics**: Prometheus + Grafana
-- **Tracing**: Jaeger or OpenTelemetry
-- **Uptime**: UptimeRobot or custom health checks
+### Enable Logging
+
+```bash
+# In .env
+COMPOSE_PROFILES=observability
+LOGGING_PROVIDER=Grafana
+
+# Restart services
+make restart
+```
+
+### Access Logs
+
+- **Grafana UI**: http://localhost:3001
+- **Query logs**: Use LogQL in Grafana Explore
+
+See [Logging Documentation](observability.md) for details.
 
 ### Health Check Endpoints
 
@@ -439,7 +452,7 @@ The API provides health check endpoints:
 - [ ] Enable PostgreSQL SSL connections
 - [ ] Use secret management (not plain text `.env`)
 - [ ] Implement rate limiting
-- [ ] Enable audit logging
+- [ ] Enable structured logging
 - [ ] Regular security updates (`make build` with latest base images)
 - [ ] Database backups with encryption
 - [ ] Implement intrusion detection

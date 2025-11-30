@@ -8,6 +8,7 @@
 .PHONY: add-migration add-migration-native execute-migration execute-migration-native
 .PHONY: logs logs-api logs-web logs-db ps restart
 .PHONY: shell-api shell-db dev-api dev-web
+.PHONY: help
 
 # ============================================================================
 # Configuration & Detection
@@ -158,6 +159,7 @@ help: ## Show this help message
 	@echo '  shell-api          Open shell in API container'
 	@echo '  shell-db           Open PostgreSQL shell'
 	@echo ''
+
 	@echo 'Development Helpers:'
 	@echo '  dev-api            Run API with hot reload (native)'
 	@echo '  dev-web            Run Web with hot reload (native)'
@@ -212,13 +214,21 @@ build-native: check-prereqs ## Build applications natively
 run: ## Run all services (Docker-based)
 	$(check_docker)
 	@echo "🚀 Starting all services with Docker..."
-	$(COMPOSE_CMD) up -d
+	@if [ -n "$(COMPOSE_PROFILES)" ]; then \
+		$(COMPOSE_CMD) --profile $(COMPOSE_PROFILES) up -d; \
+	else \
+		$(COMPOSE_CMD) up -d; \
+	fi
 	@echo "✅ All services started"
 	@echo ""
 	@echo "📍 Services available at:"
 	@echo "   • Web UI:    http://localhost:$(WEB_PORT)"
 	@echo "   • API:       http://localhost:$(API_PORT)"
 	@echo "   • Database:  localhost:$(DB_PORT)"
+	@if [ "$(COMPOSE_PROFILES)" = "observability" ]; then \
+		echo "   • Grafana UI: http://localhost:3001"; \
+		echo "   • Loki API:   http://localhost:3100"; \
+	fi
 	@echo ""
 	@echo "💡 Useful commands:"
 	@echo "   • View logs:        make logs"

@@ -7,6 +7,7 @@ using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Users.Features.DeleteApiKey;
 
@@ -25,13 +26,30 @@ public class DeleteApiKeyEndpoint : IEndpoint
         ClaimsPrincipal user,
         Guid id,
         IMediator mediator,
+        ILogger<DeleteApiKeyEndpoint> logger,
         CancellationToken ct)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null) return Results.Unauthorized();
+        if (userIdClaim is null)
+        {
+            logger.LogWarning("Delete API key called without user ID claim");
+            return Results.Unauthorized();
+        }
 
-        var req = new DeleteApiKeyRequest { KeyId = id };
-        await mediator.CallAsync(req, ct);
-        return Results.NoContent();
+        var userId = Guid.Parse(userIdClaim);
+        logger.LogInformation("Delete API key endpoint called for key {KeyId} by user {UserId}", id, userId);
+
+        try
+        {
+            var req = new DeleteApiKeyRequest { KeyId = id };
+            await mediator.CallAsync(req, ct);
+            logger.LogInformation("API key {KeyId} deleted via endpoint by user {UserId}", id, userId);
+            return Results.NoContent();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting API key {KeyId} for user {UserId}", id, userId);
+            throw;
+        }
     }
 }

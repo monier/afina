@@ -1,5 +1,6 @@
 using Afina.Data;
 using Afina.Api.Endpoints;
+using Afina.Api.Infrastructure.Logging;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Features.Login;
@@ -14,14 +15,39 @@ using Afina.Modules.Vault.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Reflection;
 using System.Text;
 
+// Configure Serilog early to capture startup logs
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Swagger
+// Map .env variables to configuration keys for logging providers
+var env = Environment.GetEnvironmentVariables();
+void MapEnv(string envKey, string configKey)
+{
+    if (env.Contains(envKey) && env[envKey] is string v && !string.IsNullOrWhiteSpace(v))
+    {
+        builder.Configuration[configKey] = v;
+    }
+}
+// Grafana configuration
+MapEnv("GRAFANA_LOKI_ENDPOINT", "Grafana:LokiEndpoint");
+MapEnv("GRAFANA_SERVICE_NAME", "Grafana:ServiceName");
+MapEnv("GRAFANA_SERVICE_VERSION", "Grafana:ServiceVersion");
+// Logging provider selection
+MapEnv("LOGGING_PROVIDER", "Logging:Provider");
+
+// Configure Serilog
+builder.ConfigureLogging();
+
+// Add OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApiDocument(config =>
+{
+    config.Title = "Afina API";
+    config.Version = "v1";
+});
 
 // Add DbContext
 builder.Services.AddDbContext<AfinaDbContext>(options =>
@@ -80,10 +106,17 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    // Serve the OpenAPI JSON at the default NSwag route: /swagger/v1/swagger.json
+    app.UseOpenApi();
+
+    // Serve the Swagger UI with defaults (path: /swagger, doc discovery handled automatically)
+    app.UseSwaggerUi();
+
+    // Compatibility redirect for legacy Swashbuckle path /swagger/index.html
+    app.MapGet("/swagger/index.html", ctx =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Afina API v1");
+        ctx.Response.Redirect("/swagger");
+        return Task.CompletedTask;
     });
 }
 
@@ -129,7 +162,20 @@ new CreateTenantEndpoint().MapEndpoint(app);
 new CreateVaultItemEndpoint().MapEndpoint(app);
 new ListVaultItemsEndpoint().MapEndpoint(app);
 
-app.Run();
+try
+{
+    Log.Information("Starting Afina API application");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Make Program class accessible for integration tests
 public partial class Program { }

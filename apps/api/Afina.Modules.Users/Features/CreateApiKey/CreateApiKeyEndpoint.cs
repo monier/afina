@@ -7,6 +7,7 @@ using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 
 namespace Afina.Modules.Users.Features.CreateApiKey;
 
@@ -25,13 +26,30 @@ public class CreateApiKeyEndpoint : IEndpoint
         ClaimsPrincipal user,
         CreateApiKeyRequest request,
         IMediator mediator,
+        ILogger<CreateApiKeyEndpoint> logger,
         CancellationToken ct)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null) return Results.Unauthorized();
+        if (userIdClaim is null)
+        {
+            logger.LogWarning("Create API key called without user ID claim");
+            return Results.Unauthorized();
+        }
 
-        request.UserId = Guid.Parse(userIdClaim);
-        var res = await mediator.CallAsync(request, ct);
-        return Results.Created($"/api/v1/users/me/api-keys/{res.Id}", res);
+        var userId = Guid.Parse(userIdClaim);
+        logger.LogInformation("Create API key endpoint called for user {UserId} with key name {KeyName}", userId, request.Name);
+
+        try
+        {
+            request.UserId = userId;
+            var res = await mediator.CallAsync(request, ct);
+            logger.LogInformation("API key {KeyId} created via endpoint for user {UserId}", res.Id, userId);
+            return Results.Created($"/api/v1/users/me/api-keys/{res.Id}", res);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error creating API key for user {UserId}", userId);
+            throw;
+        }
     }
 }
