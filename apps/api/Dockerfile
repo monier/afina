@@ -4,7 +4,7 @@ WORKDIR /src
 
 # Copy solution and project files
 COPY Afina.sln ./
-COPY Afina.Api/Afina.Api.csproj Afina.Api/
+COPY Afina.ApiApp/Afina.ApiApp.csproj Afina.ApiApp/
 COPY Afina.Data/Afina.Data.csproj Afina.Data/
 COPY Afina.Core/Afina.Core.csproj Afina.Core/
 COPY Afina.Infrastructure/Afina.Infrastructure.csproj Afina.Infrastructure/
@@ -23,7 +23,7 @@ RUN dotnet restore
 COPY . .
 
 # Build and publish
-WORKDIR /src/Afina.Api
+WORKDIR /src/Afina.ApiApp
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
@@ -34,4 +34,4 @@ COPY --from=build /app/publish .
 EXPOSE 8080
 EXPOSE 8081
 
-ENTRYPOINT ["dotnet", "Afina.Api.dll"]
+ENTRYPOINT ["dotnet", "Afina.ApiApp.dll"]

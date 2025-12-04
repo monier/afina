@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.Api", "Afina.Api\Afina.Api.csproj", "{177F86A1-64AF-439E-840D-BFB4536D0502}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.ApiApp", "Afina.ApiApp\Afina.ApiApp.csproj", "{177F86A1-64AF-439E-840D-BFB4536D0502}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.Modules.Users", "Afina.Modules.Users\Afina.Modules.Users.csproj", "{A2E6D7A4-7A6E-4C46-9B5A-9D1C3E6D9F11}"
 EndProject

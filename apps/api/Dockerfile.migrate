@@ -6,7 +6,7 @@ WORKDIR /src
 
 # Copy solution and project files
 COPY Afina.sln .
-COPY Afina.Api/Afina.Api.csproj Afina.Api/
+COPY Afina.ApiApp/Afina.ApiApp.csproj Afina.ApiApp/
 COPY Afina.Data/Afina.Data.csproj Afina.Data/
 COPY Afina.Core/Afina.Core.csproj Afina.Core/
 COPY Afina.Infrastructure/Afina.Infrastructure.csproj Afina.Infrastructure/
@@ -32,7 +32,7 @@ RUN dotnet tool install --global dotnet-ef --version 9.0.0
 ENV PATH="${PATH}:/root/.dotnet/tools"
 
 # Set working directory to the API project
-WORKDIR /src/Afina.Api
+WORKDIR /src/Afina.ApiApp
 
 # Entry point runs migrations and exits
 ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "../Afina.Data", "--startup-project", ".", "--configuration", "Release"]

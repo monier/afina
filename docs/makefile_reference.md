@@ -314,7 +314,7 @@ make stop-native
 make add-migration-native NAME=AddUserPreferences
 
 # 2. Review generated migration in:
-#    apps/api/Afina.Api/Migrations/
+#    apps/api/Afina.ApiApp/Migrations/
 
 # 3. Apply migration
 make execute-migration-native

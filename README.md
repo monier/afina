@@ -224,7 +224,7 @@ See [Logging Documentation](docs/observability.md) for details.
 afina/
 ├── apps/
 │   ├── api/              # .NET 9 Backend
-│   │   ├── Afina.Api/    # Main API project
+│   │   ├── Afina.ApiApp/    # Main API project
 │   │   └── Afina.Modules.*/ # Feature modules
 │   └── web/              # React Frontend
 ├── docs/                 # Documentation
