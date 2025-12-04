@@ -1,6 +1,7 @@
 using Afina.Data;
 using Afina.Api.Endpoints;
 using Afina.Api.Infrastructure.Logging;
+using Afina.Core.Configuration;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Features.Login;
@@ -88,7 +89,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevEnvironment())
 {
     // Serve the OpenAPI JSON at the default NSwag route: /swagger/v1/swagger.json
     app.UseOpenApi();
@@ -104,8 +105,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Register migration endpoint (only in Development/Staging)
-if (!app.Environment.IsProduction())
+// Register migration endpoint (only in dev/test/sandbox environments)
+if (app.Environment.IsNotProduction())
 {
     app.MapMigrationEndpoint();
 }

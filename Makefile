@@ -251,7 +251,7 @@ run-web-native: ## Run Web natively
 	$(check_node)
 	@echo "🚀 Starting Web natively..."
 	@echo "   Web will run on: http://localhost:5173 (Vite default)"
-	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo "   API endpoint: $(FRONTEND_API_BASE_URL)"
 	@echo ""
 	@cd apps/web && npm run dev
 
@@ -456,7 +456,7 @@ dev-web: ## Run Web with hot reload (native)
 	$(check_node)
 	@echo "🔥 Starting Web with hot reload..."
 	@echo "   Web will run on: http://localhost:5173 (Vite default)"
-	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo "   API endpoint: $(FRONTEND_API_BASE_URL)"
 	@echo ""
 	@cd apps/web && npm run dev
 

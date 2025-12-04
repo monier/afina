@@ -1,4 +1,5 @@
 using Afina.Data;
+using Afina.Core.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Afina.Api.Endpoints;
@@ -6,18 +7,18 @@ namespace Afina.Api.Endpoints;
 public static class MigrationEndpoint
 {
     /// <summary>
-    /// Registers the migration endpoint. Only available in Development and Staging environments.
+    /// Registers the migration endpoint. Only available in dev, test, and sandbox environments.
     /// </summary>
     public static void MapMigrationEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/migrate", async (AfinaDbContext dbContext, IWebHostEnvironment env) =>
         {
-            // Double-check environment safety (should never reach here in Production)
-            if (env.IsProduction())
+            // Double-check environment safety (should never reach here in prod)
+            if (env.IsProdEnvironment())
             {
                 return Results.Problem(
                     title: "Migration endpoint not available",
-                    detail: "This endpoint is not available in Production environments.",
+                    detail: "This endpoint is not available in prod environments.",
                     statusCode: 403
                 );
             }

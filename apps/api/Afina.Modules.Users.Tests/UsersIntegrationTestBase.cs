@@ -28,7 +28,7 @@ public class UsersIntegrationTestBase : IAsyncLifetime
         Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseEnvironment("Testing");
+                builder.UseEnvironment("test");
                 builder.ConfigureServices(services =>
                 {
                     services.RemoveAll<DbContextOptions<AfinaDbContext>>();
