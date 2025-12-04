@@ -321,7 +321,7 @@ test-native: ## Run all tests natively
 	@cd apps/api && find . -type d \( -name "*Tests" -o -name "*Test" \) 2>/dev/null | while read test_dir; do \
 		if [ -f "$$test_dir"/*.csproj ]; then \
 			echo "Running tests in $$test_dir"; \
-			(cd "$$test_dir" && dotnet test --verbosity normal --no-build --no-restore) || exit 1; \
+			(cd "$$test_dir" && dotnet test . --verbosity normal --no-build --no-restore) || exit 1; \
 		fi \
 	done
 	@cd apps/web && npm test 2>/dev/null || true
