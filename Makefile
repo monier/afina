@@ -298,7 +298,7 @@ lint: ## Lint/check all source code (Docker-based)
 	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm run lint" web || echo "⚠️  Web linting found issues"
 	@echo "✅ Linting complete"
 
-lint-native: build-native ## Lint/check all source code natively
+lint-native: ## Lint/check all source code natively
 	@echo "🔍 Linting..."
 	@cd apps/api && dotnet format Afina.sln --verify-no-changes --verbosity quiet
 	@cd apps/web && npm run lint --silent 2>/dev/null || true
@@ -316,9 +316,9 @@ test: ## Run all tests (Docker-based)
 	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm test" web || echo "⚠️  No web tests configured"
 	@echo "✅ All tests complete"
 
-test-native: build-native ## Run all tests natively
+test-native: ## Run all tests natively
 	@echo "🧪 Testing..."
-	@cd apps/api && for test_proj in $$(find . -name "*Tests.csproj" -o -name "*Test.csproj" 2>/dev/null); do \
+	@cd apps/api && find . -name "*Tests.csproj" -o -name "*Test.csproj" 2>/dev/null | while read test_proj; do \
 		dotnet test "$$test_proj" --verbosity normal --no-build || exit 1; \
 	done
 	@cd apps/web && npm test 2>/dev/null || true
