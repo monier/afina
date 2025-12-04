@@ -24,6 +24,9 @@ RUN dotnet restore
 # Copy source code
 COPY . .
 
+# Build the solution
+RUN dotnet build Afina.sln -c Release
+
 # Install EF Core tools
 RUN dotnet tool install --global dotnet-ef --version 9.0.0
 ENV PATH="${PATH}:/root/.dotnet/tools"
@@ -32,4 +35,4 @@ ENV PATH="${PATH}:/root/.dotnet/tools"
 WORKDIR /src/Afina.Api
 
 # Entry point runs migrations and exits
-ENTRYPOINT ["dotnet", "ef", "database", "update", "--no-build"]
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "../Afina.Data", "--startup-project", ".", "--configuration", "Release"]

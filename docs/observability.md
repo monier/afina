@@ -2,32 +2,20 @@
 
 ## Quick Start
 
-```bash
-# Enable Grafana logging in .env
-COMPOSE_PROFILES=observability
-LOGGING_PROVIDER=Grafana
-
-# Start services
-make run
-
-# Access Grafana UI at http://localhost:3001
-```
+Logs are printed to the console for easy viewing during development and in container logs for Docker deployments.
 
 ## Configuration
 
-Configure logging via `.env`:
+Logs are output to the console by default in both Docker and native deployments. View logs using:
 
 ```bash
-# Enable Grafana + Loki services
-COMPOSE_PROFILES=observability
+# Docker: View all container logs
+make logs
 
-# Logging destination
-LOGGING_PROVIDER=Grafana         # Options: Grafana, StdOut
+# Docker: View API logs specifically
+make logs-api
 
-# Loki connection
-GRAFANA_LOKI_ENDPOINT=http://loki:3100
-GRAFANA_SERVICE_NAME=afina-api
-GRAFANA_SERVICE_VERSION=1.0.0
+# Native: Check console output in the terminal where the API is running
 ```
 
 ## Usage
@@ -73,48 +61,49 @@ _logger.LogError(ex, "Failed to process order {OrderId}", orderId);
 
 - **Interface**: ILogger<T> (Microsoft.Extensions.Logging)
 - **Implementation**: Serilog structured logging
-- **Sinks**: Console (always) + Grafana Loki (when enabled)
-- **Transport**: HTTP API to Loki endpoint
-- **Labels**: app, environment, version
+- **Sink**: Console output (always enabled)
+- **Format**: Structured logging with timestamps and severity levels
 
-## Services
+## Viewing Logs
 
-| Service    | URL                   | Purpose           |
-| ---------- | --------------------- | ----------------- |
-| Grafana UI | http://localhost:3001 | Log visualization |
-| Loki API   | http://localhost:3100 | Log aggregation   |
+### Docker Deployment
+
+```bash
+# View all service logs
+make logs
+
+# View API logs only
+make logs-api
+
+# View database logs
+make logs-db
+
+# Follow logs in real-time (Ctrl+C to exit)
+make logs-api
+```
+
+### Native Development
+
+```bash
+# View console output where the API is running
+# Logs appear directly in the terminal
+
+# For background processes:
+# Use 'make stop-native' to stop and view final output
+```
 
 ## Troubleshooting
 
-**No logs in Grafana?**
+**No logs appearing?**
 
 ```bash
-# Check .env configuration
-cat .env | grep LOGGING_PROVIDER
+# Docker: Verify services are running
+make ps
 
-# Verify Loki is running
-docker compose ps loki
+# Docker: Check service logs
+make logs-api
 
-# View Loki logs
-docker compose logs loki
-
-# Restart API
-make restart
-```
-
-**Toggle logging:**
-
-```bash
-# Enable Grafana
-COMPOSE_PROFILES=observability
-LOGGING_PROVIDER=Grafana
-
-# Disable (console only)
-COMPOSE_PROFILES=
-LOGGING_PROVIDER=StdOut
-
-# Apply changes
-make restart
+# Native: Ensure API process is still running
 ```
 
 **Reduce log volume:**
@@ -125,6 +114,23 @@ make restart
   "Serilog": {
     "MinimumLevel": {
       "Default": "Warning"
+    }
+  }
+}
+```
+
+**Filter logs by category:**
+
+```json
+// appsettings.json
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
     }
   }
 }

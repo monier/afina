@@ -9,9 +9,11 @@ public class AfinaDbContextFactory : IDesignTimeDbContextFactory<AfinaDbContext>
     {
         var optionsBuilder = new DbContextOptionsBuilder<AfinaDbContext>();
 
-        // Use a connection string for design-time operations
-        // This is only used for migrations generation, not at runtime
-        optionsBuilder.UseNpgsql("Host=localhost;Database=afina_db;Username=postgres;Password=postgres");
+        // Read connection string from environment variable or use default for local development
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? "Host=localhost;Database=afina_db;Username=postgres;Password=postgres";
+
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new AfinaDbContext(optionsBuilder.Options);
     }

@@ -63,6 +63,12 @@ make dev-web    # Terminal 2
 
 Run `make help` to see all available commands.
 
+### Docker Profiles
+
+Profiles enable optional services via `COMPOSE_PROFILES` in `.env`:
+
+- **`db-view`**: Includes pgAdmin for database administration at http://localhost:5050
+
 ### Essential Commands
 
 | Command            | Description                   |
@@ -76,7 +82,6 @@ Run `make help` to see all available commands.
 | `make before-push` | Run all checks before pushing |
 | `make dev-api`     | Run API with hot reload       |
 | `make dev-web`     | Run Web with hot reload       |
-| `make grafana`     | Open Grafana UI               |
 
 ### Native Development
 
@@ -84,10 +89,10 @@ Add `-native` suffix to run commands natively (e.g., `make build-native`, `make 
 
 ### Database Migrations
 
-| Command                          | Description      |
-| -------------------------------- | ---------------- |
-| `make add-migration NAME=<name>` | Create migration |
-| `make execute-migration`         | Apply migrations |
+| Command                                 | Description      |
+| --------------------------------------- | ---------------- |
+| `make add-migration-native NAME=<name>` | Create migration |
+| `make execute-migration`                | Apply migrations |
 
 ## Service URLs
 
@@ -97,7 +102,7 @@ Add `-native` suffix to run commands natively (e.g., `make build-native`, `make 
 - **API**: http://localhost:5100
 - **API Docs**: http://localhost:5100/swagger
 - **PostgreSQL**: localhost:5432
-- **Grafana** (if `COMPOSE_PROFILES=observability`): http://localhost:3001
+- **pgAdmin**: http://localhost:5050 (when using `db-view` profile)
 
 ### Native Development
 
@@ -164,6 +169,8 @@ make shell-db
 psql -h localhost -U postgres -d afina_db
 ```
 
+**pgAdmin**: For a web UI to manage the database, enable the `db-view` profile in `.env` and see [pgAdmin documentation](config/pgadmin/README.md).
+
 ## Cleaning Up
 
 ```bash
@@ -195,20 +202,18 @@ make clean
 - **Automatic migrations**: Database migrations on API startup (Docker)
 - **Hot reload**: Native development with instant code updates
 - **Persistent volumes**: Database data survives container restarts
-- **Logging**: Grafana + Loki for centralized log aggregation
+- **Logging**: Structured logging to console output
 
 ## Logging
 
-Afina uses Serilog for structured logging with optional Grafana + Loki integration.
+Afina uses Serilog for structured logging. Logs are output to the console in both Docker and native deployments.
 
 ```bash
-# Enable in .env
-COMPOSE_PROFILES=observability
-LOGGING_PROVIDER=Grafana
+# Docker: View logs
+make logs
 
-# Start and view logs
-make run
-make grafana
+# Docker: View API logs specifically
+make logs-api
 ```
 
 See [Logging Documentation](docs/observability.md) for details.
