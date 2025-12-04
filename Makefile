@@ -318,7 +318,7 @@ test: ## Run all tests (Docker-based)
 
 test-native: ## Run all tests natively
 	@echo "🧪 Testing..."
-	@cd apps/api && find . -name "*Tests.csproj" -o -name "*Test.csproj" 2>/dev/null | while read test_proj; do \
+	@cd apps/api && find . -type f \( -name "*Tests.csproj" -o -name "*Test.csproj" \) 2>/dev/null | while read test_proj; do \
 		dotnet test "$$test_proj" --verbosity normal --no-build || exit 1; \
 	done
 	@cd apps/web && npm test 2>/dev/null || true
