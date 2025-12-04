@@ -17,6 +17,7 @@ COPY Afina.Modules.Encryption/Afina.Modules.Encryption.csproj Afina.Modules.Encr
 COPY Afina.Modules.Audit/Afina.Modules.Audit.csproj Afina.Modules.Audit/
 COPY Afina.Modules.Users/Afina.Modules.Users.csproj Afina.Modules.Users/
 COPY Afina.Modules.Users.Tests/Afina.Modules.Users.Tests.csproj Afina.Modules.Users.Tests/
+COPY Afina.MigrationRunner/Afina.MigrationRunner.csproj Afina.MigrationRunner/
 
 # Restore dependencies
 RUN dotnet restore
@@ -27,12 +28,8 @@ COPY . .
 # Build the solution
 RUN dotnet build Afina.sln -c Release
 
-# Install EF Core tools
-RUN dotnet tool install --global dotnet-ef --version 9.0.0
-ENV PATH="${PATH}:/root/.dotnet/tools"
+# Set working directory to the migration runner project
+WORKDIR /src/Afina.MigrationRunner
 
-# Set working directory to the API project
-WORKDIR /src/Afina.ApiApp
-
-# Entry point runs migrations and exits
-ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "../Afina.Data", "--startup-project", ".", "--configuration", "Release"]
+# Entry point runs the migration runner and exits
+ENTRYPOINT ["dotnet", "run", "--configuration", "Release", "--no-build"]

@@ -1,7 +1,7 @@
-using Afina.Data;
-using Afina.ApiApp.Infrastructure.Logging; // Corrected reference
+using Afina.ApiApp.Infrastructure.Logging;
 using Afina.Core.Configuration;
 using Afina.Core.Interfaces;
+using Afina.Data;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Features.Login;
 using Afina.Modules.Users.Features.Register;
@@ -67,6 +67,7 @@ builder.Services.AddCors(options =>
     });
 });
 var app = builder.Build();
+
 if (app.Environment.IsDevEnvironment())
 {
     app.UseOpenApi();

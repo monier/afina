@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.Infrastructure", "Afi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.Contracts", "Afina.Contracts\Afina.Contracts.csproj", "{65E8BC05-E93F-4B99-BA39-0C93298C1B52}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afina.MigrationRunner", "Afina.MigrationRunner\Afina.MigrationRunner.csproj", "{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -155,6 +157,18 @@ Global
 		{65E8BC05-E93F-4B99-BA39-0C93298C1B52}.Release|x64.Build.0 = Release|Any CPU
 		{65E8BC05-E93F-4B99-BA39-0C93298C1B52}.Release|x86.ActiveCfg = Release|Any CPU
 		{65E8BC05-E93F-4B99-BA39-0C93298C1B52}.Release|x86.Build.0 = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|x64.Build.0 = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Debug|x86.Build.0 = Debug|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|x64.ActiveCfg = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|x64.Build.0 = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|x86.ActiveCfg = Release|Any CPU
+		{7F8E5A2C-3F6D-4B8C-9A1E-5E6D4C3B2F1A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,9 +28,6 @@ namespace Afina.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -56,9 +53,6 @@ namespace Afina.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -83,9 +77,6 @@ namespace Afina.Data.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -94,9 +85,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -121,9 +109,6 @@ namespace Afina.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -135,9 +120,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uuid");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -163,9 +145,6 @@ namespace Afina.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -181,9 +160,6 @@ namespace Afina.Data.Migrations
                     b.Property<string>("MasterKeyHash")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -206,9 +182,6 @@ namespace Afina.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -227,9 +200,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -250,9 +220,6 @@ namespace Afina.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -265,9 +232,6 @@ namespace Afina.Data.Migrations
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -291,9 +255,6 @@ namespace Afina.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -316,9 +277,6 @@ namespace Afina.Data.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -338,9 +296,6 @@ namespace Afina.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -352,9 +307,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<int>("Role")
                         .HasColumnType("integer");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -375,9 +327,6 @@ namespace Afina.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -396,9 +345,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<int>("SystemRole")
                         .HasColumnType("integer");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -428,9 +374,6 @@ namespace Afina.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long>("CreatedAt")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -454,9 +397,6 @@ namespace Afina.Data.Migrations
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
-
-                    b.Property<long?>("UpdatedAt")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
