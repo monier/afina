@@ -49,7 +49,7 @@ services:
     networks:
       - afina-network
     profiles:
-      - tools
+      - db-migration
 
   web:
     build:

@@ -1,6 +1,5 @@
 **/bin/
 **/obj/
-**/Migrations/
 **/.vs/
 **/.vscode/
 **/appsettings.Development.json

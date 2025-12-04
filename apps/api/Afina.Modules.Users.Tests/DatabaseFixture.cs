@@ -44,7 +44,7 @@ public class DatabaseFixture : IAsyncLifetime
         {
             if (!_schemaCreated)
             {
-                await db.Database.EnsureCreatedAsync();
+                await db.Database.MigrateAsync();
                 _schemaCreated = true;
             }
         }

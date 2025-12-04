@@ -343,11 +343,11 @@ add-migration: ## Create a new EF Core migration (Docker) - Usage: make add-migr
 		exit 1; \
 	fi
 	@echo "📝 Creating migration: $(NAME)"
-	$(COMPOSE_CMD) run --rm --no-deps migrate dotnet ef migrations add $(NAME) --project Afina.Api
+	$(COMPOSE_CMD) run --rm --no-deps migrate dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.Api
 	@echo "✅ Migration '$(NAME)' created successfully"
 	@echo ""
 	@echo "💡 Next steps:"
-	@echo "   • Review the migration in apps/api/Afina.Api/Migrations/"
+	@echo "   • Review the migration in apps/api/Afina.Data/Migrations/"
 	@echo "   • Apply it with: make execute-migration"
 
 add-migration-native: ## Create a new EF Core migration (native) - Usage: make add-migration-native NAME=MigrationName
@@ -358,17 +358,17 @@ add-migration-native: ## Create a new EF Core migration (native) - Usage: make a
 		exit 1; \
 	fi
 	@echo "📝 Creating migration: $(NAME)"
-	@cd apps/api && dotnet ef migrations add $(NAME) --project Afina.Api --startup-project Afina.Api
+	@cd apps/api && dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.Api
 	@echo "✅ Migration '$(NAME)' created successfully"
 	@echo ""
 	@echo "💡 Next steps:"
-	@echo "   • Review the migration in apps/api/Afina.Api/Migrations/"
+	@echo "   • Review the migration in apps/api/Afina.Data/Migrations/"
 	@echo "   • Apply it with: make execute-migration-native"
 
 execute-migration: ## Execute pending database migrations (Docker)
 	$(check_docker)
 	@echo "🗄️  Executing database migrations..."
-	$(COMPOSE_CMD) run --rm migrate
+	$(COMPOSE_CMD) --profile db-migration run --rm migrate
 	@echo "✅ Migrations executed successfully"
 
 execute-migration-native: ## Execute pending database migrations (native)
@@ -377,7 +377,7 @@ execute-migration-native: ## Execute pending database migrations (native)
 	@echo "🗄️  Executing database migrations..."
 	@cd apps/api && \
 		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
-		dotnet ef database update --project Afina.Api --startup-project Afina.Api
+		dotnet ef database update --project Afina.Data --startup-project Afina.Api
 	@echo "✅ Migrations executed successfully"
 
 # ============================================================================
@@ -409,10 +409,21 @@ ps: ## Show running Docker containers
 	@echo "📊 Running containers:"
 	@$(COMPOSE_CMD) ps
 
-restart: ## Restart all Docker services
+restart: ## Restart all Docker services (stop, build, run)
 	$(check_docker)
 	@echo "🔄 Restarting all services..."
-	$(COMPOSE_CMD) restart
+	@echo "  → Stopping services..."
+	$(COMPOSE_CMD) down
+	@echo "  → Building..."
+	$(COMPOSE_CMD) build
+	@echo "  → Executing migrations..."
+	$(COMPOSE_CMD) --profile db-migration run --rm migrate
+	@echo "  → Starting..."
+	@if [ -n "$(COMPOSE_PROFILES)" ]; then \
+		$(COMPOSE_CMD) --profile $(COMPOSE_PROFILES) up -d; \
+	else \
+		$(COMPOSE_CMD) up -d; \
+	fi
 	@echo "✅ Services restarted"
 
 shell-api: ## Open shell in API container

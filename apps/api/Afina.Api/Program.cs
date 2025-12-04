@@ -104,23 +104,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Ensure database is created for development environments
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AfinaDbContext>();
-    try
-    {
-        // If migrations exist, prefer Migrate; otherwise EnsureCreated creates schema from the model
-        await db.Database.EnsureCreatedAsync();
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Database initialization error: {ex.Message}");
-        throw;
-    }
-}
-
 // Register migration endpoint (only in Development/Staging)
 if (!app.Environment.IsProduction())
 {

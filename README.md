@@ -89,10 +89,10 @@ Add `-native` suffix to run commands natively (e.g., `make build-native`, `make 
 
 ### Database Migrations
 
-| Command                          | Description      |
-| -------------------------------- | ---------------- |
-| `make add-migration NAME=<name>` | Create migration |
-| `make execute-migration`         | Apply migrations |
+| Command                                 | Description      |
+| --------------------------------------- | ---------------- |
+| `make add-migration-native NAME=<name>` | Create migration |
+| `make execute-migration`                | Apply migrations |
 
 ## Service URLs
 
