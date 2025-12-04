@@ -316,12 +316,12 @@ test: ## Run all tests (Docker-based)
 	$(COMPOSE_CMD) run --rm --no-deps --entrypoint "npm test" web || echo "⚠️  No web tests configured"
 	@echo "✅ All tests complete"
 
-test-native: ## Run all tests natively
+test-native: build-native ## Run all tests natively
 	@echo "🧪 Testing..."
 	@cd apps/api && find . -type d \( -name "*Tests" -o -name "*Test" \) 2>/dev/null | while read test_dir; do \
 		if [ -f "$$test_dir"/*.csproj ]; then \
 			echo "Running tests in $$test_dir"; \
-			(cd "$$test_dir" && dotnet test . --verbosity normal --no-build --no-restore) || exit 1; \
+			(cd "$$test_dir" && dotnet test . --verbosity normal) || exit 1; \
 		fi \
 	done
 	@cd apps/web && npm test 2>/dev/null || true
