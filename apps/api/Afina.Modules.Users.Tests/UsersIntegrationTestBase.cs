@@ -31,9 +31,16 @@ public class UsersIntegrationTestBase : IAsyncLifetime
                 builder.UseEnvironment("test");
                 builder.ConfigureServices(services =>
                 {
+                    // Remove existing DbContext registration
                     services.RemoveAll<DbContextOptions<AfinaDbContext>>();
+                    services.RemoveAll<AfinaDbContext>();
+
+                    // Add SearchPath to test connection string to use afina_test schema
+                    var testConnectionString = _dbFixture.ConnectionString + ";SearchPath=afina_test";
+
+                    // Re-register with test connection string
                     services.AddDbContext<AfinaDbContext>(options =>
-                        options.UseNpgsql(_dbFixture.ConnectionString));
+                        options.UseNpgsql(testConnectionString));
                 });
             });
 

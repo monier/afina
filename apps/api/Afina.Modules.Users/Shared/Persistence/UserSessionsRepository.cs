@@ -22,7 +22,6 @@ public sealed class UserSessionsRepository : IUserSessionsRepository
             UserId = userId,
             Token = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddDays(30),
-            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             CreatedAtUtc = DateTime.UtcNow,
             CreatedBy = userId
         };

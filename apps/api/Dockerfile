@@ -15,6 +15,7 @@ COPY Afina.Modules.Audit/Afina.Modules.Audit.csproj Afina.Modules.Audit/
 COPY Afina.Modules.Encryption/Afina.Modules.Encryption.csproj Afina.Modules.Encryption/
 COPY Afina.Modules.Users/Afina.Modules.Users.csproj Afina.Modules.Users/
 COPY Afina.Modules.Users.Tests/Afina.Modules.Users.Tests.csproj Afina.Modules.Users.Tests/
+COPY Afina.MigrationRunner/Afina.MigrationRunner.csproj Afina.MigrationRunner/
 
 # Restore dependencies
 RUN dotnet restore

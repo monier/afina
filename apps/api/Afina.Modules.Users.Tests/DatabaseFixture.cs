@@ -44,6 +44,13 @@ public class DatabaseFixture : IAsyncLifetime
         {
             if (!_schemaCreated)
             {
+                // Initialize schemas before running migrations
+                // The connection string from testcontainers doesn't include SearchPath,
+                // so we default to "afina_test" for tests
+                var initializer = new SchemaInitializer();
+                await initializer.InitializeAsync(db, "afina_test");
+
+                // Now run migrations
                 await db.Database.MigrateAsync();
                 _schemaCreated = true;
             }
@@ -52,6 +59,21 @@ public class DatabaseFixture : IAsyncLifetime
         {
             _schemaLock.Release();
         }
+    }
+
+    private string ExtractSchemaFromConnection()
+    {
+        // Extract SearchPath from connection string (e.g., ";SearchPath=afina_test")
+        var searchPathParam = ConnectionString.Split(";")
+            .FirstOrDefault(p => p.StartsWith("SearchPath=", StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrEmpty(searchPathParam))
+        {
+            return searchPathParam.Substring("SearchPath=".Length).Split(",")[0].Trim();
+        }
+
+        // Default to afina_test for tests
+        return "afina_test";
     }
 
     public async Task DisposeAsync()

@@ -39,7 +39,6 @@ public sealed class UsersRepository : IUserRepository
             PasswordHash = passwordHash,
             PasswordHint = passwordHint,
             SystemRole = existingUsersCount == 0 ? SystemRole.Admin : SystemRole.Member,
-            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             CreatedAtUtc = DateTime.UtcNow
         };
 
