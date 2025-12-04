@@ -63,6 +63,12 @@ make dev-web    # Terminal 2
 
 Run `make help` to see all available commands.
 
+### Docker Profiles
+
+Profiles enable optional services via `COMPOSE_PROFILES` in `.env`:
+
+- **`db-view`**: Includes pgAdmin for database administration at http://localhost:5050
+
 ### Essential Commands
 
 | Command            | Description                   |
@@ -96,6 +102,7 @@ Add `-native` suffix to run commands natively (e.g., `make build-native`, `make 
 - **API**: http://localhost:5100
 - **API Docs**: http://localhost:5100/swagger
 - **PostgreSQL**: localhost:5432
+- **pgAdmin**: http://localhost:5050 (when using `db-view` profile)
 
 ### Native Development
 
@@ -161,6 +168,8 @@ make shell-db
 # Native
 psql -h localhost -U postgres -d afina_db
 ```
+
+**pgAdmin**: For a web UI to manage the database, enable the `db-view` profile in `.env` and see [pgAdmin documentation](config/pgadmin/README.md).
 
 ## Cleaning Up
 

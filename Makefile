@@ -225,6 +225,9 @@ run: ## Run all services (Docker-based)
 	@echo "   • Web UI:    http://localhost:$(WEB_PORT)"
 	@echo "   • API:       http://localhost:$(API_PORT)"
 	@echo "   • Database:  localhost:$(DB_PORT)"
+	@if [ "$(COMPOSE_PROFILES)" = "db-view" ]; then \
+		echo "   • pgAdmin:   http://localhost:$(PGADMIN_PORT)"; \
+	fi
 	@echo ""
 	@echo "💡 Useful commands:"
 	@echo "   • View logs:        make logs"
