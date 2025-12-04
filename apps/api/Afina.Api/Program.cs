@@ -120,8 +120,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Ensure database is created for development/test environments even if migrations are missing
-if (!app.Environment.IsProduction())
+// Ensure database is created for development environments
+if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AfinaDbContext>();

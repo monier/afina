@@ -1,0 +1,53 @@
+{
+  "auth": {
+    "login": {
+      "title": "Afina",
+      "username": "Username",
+      "usernamePlaceholder": "Enter your username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "signInButton": "Sign In",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up"
+    },
+    "register": {
+      "title": "Create Account",
+      "username": "Username",
+      "usernamePlaceholder": "Choose a username",
+      "usernameHelp": "Unique username within the system",
+      "password": "Password",
+      "passwordPlaceholder": "Create a strong password",
+      "passwordHelp": "This is your master password for encrypting your private data. Make it strong and memorable.",
+      "passwordWarning": "⚠️ Important: There is no way to recover this password. Make sure you remember it!",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter your password",
+      "passwordHint": "Password Hint (Optional)",
+      "passwordHintPlaceholder": "A hint to help you remember (e.g., \"My childhood pet's name + birth year 🐕\")",
+      "passwordHintHelp": "Never include your actual password in the hint. Use emojis, phrases, or clues only you understand.",
+      "registerButton": "Create Account",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "successMessage": "Registration successful! You can now login with your credentials.",
+      "redirecting": "Redirecting to login..."
+    }
+  },
+  "errors": {
+    "USERNAME_REQUIRED": "Username is required",
+    "PASSWORD_REQUIRED": "Password is required",
+    "USERNAME_ALREADY_EXISTS": "This username is already taken. Please choose another one.",
+    "USERNAME_INVALID": "Username contains invalid characters",
+    "PASSWORD_TOO_WEAK": "Password is too weak. Please use a stronger password.",
+    "INVALID_CREDENTIALS": "Invalid username or password",
+    "USER_NOT_FOUND": "User not found",
+    "VALIDATION_ERROR": "Validation error occurred",
+    "INTERNAL_ERROR": "An unexpected error occurred. Please try again.",
+    "PASSWORD_MISMATCH": "Passwords do not match",
+    "PASSWORD_TOO_SHORT": "Password must be at least 8 characters long",
+    "NETWORK_ERROR": "Network error. Please check your connection and try again."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  }
+}

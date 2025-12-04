@@ -9,6 +9,8 @@ namespace Afina.Modules.Users.Tests.Features.Register;
 
 public class RegisterTests : UsersIntegrationTestBase
 {
+    public RegisterTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task Register_WithValidData_CreatesUserAndReturnsTokens()
     {
@@ -28,14 +30,7 @@ public class RegisterTests : UsersIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         result.Should().NotBeNull();
-        result!.Token.Should().NotBeNullOrWhiteSpace();
-        result.RefreshToken.Should().NotBeNullOrWhiteSpace();
-        result.User.Should().NotBeNull();
-
-        // User is an anonymous object with id and username
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result.User));
-        jsonDoc.RootElement.GetProperty("username").GetString().Should().Be(username);
-        jsonDoc.RootElement.GetProperty("id").GetGuid().Should().NotBeEmpty();
+        result!.UserId.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -57,10 +52,7 @@ public class RegisterTests : UsersIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         result.Should().NotBeNull();
-
-        // User is an anonymous object with id and username
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result!.User));
-        jsonDoc.RootElement.GetProperty("username").GetString().Should().Be(username);
+        result!.UserId.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -81,7 +73,7 @@ public class RegisterTests : UsersIntegrationTestBase
         var response = await Client.PostAsJsonAsync("/api/v1/auth/register", request);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -127,15 +119,9 @@ public class RegisterTests : UsersIntegrationTestBase
         var user1 = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash1");
         var user2 = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash2");
 
-        // Assert
-        user1.Token.Should().NotBe(user2.Token);
-        user1.RefreshToken.Should().NotBe(user2.RefreshToken);
-
-        // Compare user IDs
-        using var jsonDoc1 = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(user1.User));
-        using var jsonDoc2 = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(user2.User));
-        var userId1 = jsonDoc1.RootElement.GetProperty("id").GetGuid();
-        var userId2 = jsonDoc2.RootElement.GetProperty("id").GetGuid();
-        userId1.Should().NotBe(userId2);
+        // Assert - Compare user IDs
+        user1.UserId.Should().NotBe(user2.UserId);
+        user1.UserId.Should().NotBeEmpty();
+        user2.UserId.Should().NotBeEmpty();
     }
 }

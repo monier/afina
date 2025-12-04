@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Shared.Persistence;
 using Microsoft.Extensions.Logging;
@@ -26,7 +27,7 @@ public sealed class GetCurrentUserHandler : IRequestHandler<GetCurrentUserReques
         if (user is null)
         {
             _logger.LogWarning("User {UserId} not found", request.UserId);
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.USER_DELETED, "User account no longer exists.");
         }
 
         return new GetCurrentUserResponse { Id = user.Id, Username = user.Username };

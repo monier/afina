@@ -13,6 +13,8 @@ namespace Afina.Modules.Users.Tests.Scenarios;
 /// </summary>
 public class ApiKeyManagementTests : UsersIntegrationTestBase
 {
+    public ApiKeyManagementTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task ApiKeyManagement_CreateListDeleteKeys_WorksCorrectly()
     {
@@ -55,8 +57,10 @@ public class ApiKeyManagementTests : UsersIntegrationTestBase
     public async Task ApiKeyManagement_KeysIsolatedBetweenUsers()
     {
         // Create first user with keys
-        var user1Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash1");
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        var user1Username = TestHelpers.GenerateTestUsername();
+        var user1RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
+        var user1LoginResponse = await TestHelpers.LoginUserAsync(Client, user1Username, "hash1");
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User1-Key1" });
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User1-Key2" });
 
@@ -67,8 +71,10 @@ public class ApiKeyManagementTests : UsersIntegrationTestBase
 
         // Create second user with different keys
         TestHelpers.ClearAuthToken(Client);
-        var user2Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash2");
-        TestHelpers.SetAuthToken(Client, user2Response.Token);
+        var user2Username = TestHelpers.GenerateTestUsername();
+        var user2RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
+        var user2LoginResponse = await TestHelpers.LoginUserAsync(Client, user2Username, "hash2");
+        TestHelpers.SetAuthToken(Client, user2LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User2-Key1" });
 
         // Verify user2 sees only their own key
@@ -77,7 +83,7 @@ public class ApiKeyManagementTests : UsersIntegrationTestBase
         user2List!.Keys.Should().HaveCount(1);
 
         // Switch back to user1 and verify their keys are unchanged
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         var user1KeysAgain = await Client.GetAsync("/api/v1/users/me/api-keys");
         var user1ListAgain = await user1KeysAgain.Content.ReadFromJsonAsync<ListApiKeysResponse>();
         user1ListAgain!.Keys.Should().HaveCount(2);

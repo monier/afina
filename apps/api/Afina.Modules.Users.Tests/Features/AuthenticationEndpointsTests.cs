@@ -21,6 +21,8 @@ namespace Afina.Modules.Users.Tests;
 /// </summary>
 public class AuthenticationEndpointsTests : UsersIntegrationTestBase
 {
+    public AuthenticationEndpointsTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task Register_CreatesUserAndReturnsTokens()
     {
@@ -40,9 +42,7 @@ public class AuthenticationEndpointsTests : UsersIntegrationTestBase
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
         result.Should().NotBeNull();
-        result!.Token.Should().NotBeNullOrWhiteSpace();
-        result.RefreshToken.Should().NotBeNullOrWhiteSpace();
-        result.User.Should().NotBeNull();
+        result!.UserId.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -74,10 +74,10 @@ public class AuthenticationEndpointsTests : UsersIntegrationTestBase
     public async Task RefreshToken_WithValidToken_ReturnsNewTokens()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
         var refreshRequest = new RefreshTokenRequest
         {
-            RefreshToken = registerResponse.RefreshToken
+            RefreshToken = refreshToken
         };
 
         // Act
@@ -89,14 +89,14 @@ public class AuthenticationEndpointsTests : UsersIntegrationTestBase
         result.Should().NotBeNull();
         result!.Token.Should().NotBeNullOrWhiteSpace();
         result.RefreshToken.Should().NotBeNullOrWhiteSpace();
-        result.RefreshToken.Should().NotBe(registerResponse.RefreshToken);
+        result.RefreshToken.Should().NotBe(refreshToken);
     }
 
     [Fact]
     public async Task GetCurrentUser_WithValidToken_ReturnsUserProfile()
     {
         // Arrange
-        var (_, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Act
         var response = await Client.GetAsync("/api/v1/users/me");

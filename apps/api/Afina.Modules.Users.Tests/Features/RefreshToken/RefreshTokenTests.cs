@@ -9,14 +9,16 @@ namespace Afina.Modules.Users.Tests.Features.RefreshToken;
 
 public class RefreshTokenTests : UsersIntegrationTestBase
 {
+    public RefreshTokenTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task RefreshToken_WithValidToken_ReturnsNewTokens()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
         var request = new RefreshTokenRequest
         {
-            RefreshToken = registerResponse.RefreshToken
+            RefreshToken = refreshToken
         };
 
         // Act
@@ -29,7 +31,7 @@ public class RefreshTokenTests : UsersIntegrationTestBase
         result!.Token.Should().NotBeNullOrWhiteSpace();
         result.RefreshToken.Should().NotBeNullOrWhiteSpace();
         // RefreshToken should definitely be rotated
-        result.RefreshToken.Should().NotBe(registerResponse.RefreshToken);
+        result.RefreshToken.Should().NotBe(refreshToken);
         // Access token may be same if created within same second (JWT has timestamp)
         // This is acceptable behavior
     }
@@ -70,10 +72,10 @@ public class RefreshTokenTests : UsersIntegrationTestBase
     public async Task RefreshToken_UsingSameTokenTwice_SecondAttemptFails()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
         var request = new RefreshTokenRequest
         {
-            RefreshToken = registerResponse.RefreshToken
+            RefreshToken = refreshToken
         };
 
         // Act
@@ -89,8 +91,8 @@ public class RefreshTokenTests : UsersIntegrationTestBase
     public async Task RefreshToken_AfterMultipleRefreshes_TokensContinueToRotate()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
-        var currentRefreshToken = registerResponse.RefreshToken;
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var currentRefreshToken = refreshToken;
 
         // Act & Assert - chain multiple refreshes
         for (int i = 0; i < 3; i++)
@@ -114,14 +116,15 @@ public class RefreshTokenTests : UsersIntegrationTestBase
         var username = TestHelpers.GenerateTestUsername();
         var passwordHash = "hash-123";
         var registerResponse = await TestHelpers.RegisterUserAsync(Client, username, passwordHash);
+        var loginResponse = await TestHelpers.LoginUserAsync(Client, username, passwordHash);
 
         // Delete the user (which should revoke all sessions)
-        TestHelpers.SetAuthToken(Client, registerResponse.Token);
+        TestHelpers.SetAuthToken(Client, loginResponse.Token);
         await Client.DeleteAsync("/api/v1/users/me");
 
         var request = new RefreshTokenRequest
         {
-            RefreshToken = registerResponse.RefreshToken
+            RefreshToken = loginResponse.RefreshToken
         };
 
         // Act

@@ -11,6 +11,8 @@ namespace Afina.Modules.Users.Tests.Features.ListApiKeys;
 
 public class ListApiKeysTests : UsersIntegrationTestBase
 {
+    public ListApiKeysTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task ListApiKeys_WithNoKeys_ReturnsEmptyList()
     {
@@ -117,15 +119,17 @@ public class ListApiKeysTests : UsersIntegrationTestBase
     {
         // Arrange - create first user with keys
         var user1Username = TestHelpers.GenerateTestUsername();
-        var user1Response = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        var user1RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
+        var user1LoginResponse = await TestHelpers.LoginUserAsync(Client, user1Username, "hash1");
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User1 Key" });
 
         // Create second user with different keys
         TestHelpers.ClearAuthToken(Client);
         var user2Username = TestHelpers.GenerateTestUsername();
-        var user2Response = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
-        TestHelpers.SetAuthToken(Client, user2Response.Token);
+        var user2RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
+        var user2LoginResponse = await TestHelpers.LoginUserAsync(Client, user2Username, "hash2");
+        TestHelpers.SetAuthToken(Client, user2LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User2 Key 1" });
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User2 Key 2" });
 

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
@@ -37,20 +38,38 @@ public class RegisterEndpoint : IEndpoint
             logger.LogInformation("Registration successful for username: {Username}", request.Username);
             return Results.Ok(response);
         }
+        catch (ApiException ex)
+        {
+            logger.LogWarning(ex, "Registration failed for username: {Username} with code: {Code}",
+                request.Username, ex.Code);
+            var statusCode = ex.Code switch
+            {
+                ErrorCodes.USERNAME_ALREADY_EXISTS => StatusCodes.Status409Conflict,
+                ErrorCodes.USERNAME_REQUIRED => StatusCodes.Status400BadRequest,
+                ErrorCodes.PASSWORD_REQUIRED => StatusCodes.Status400BadRequest,
+                ErrorCodes.USERNAME_INVALID => StatusCodes.Status400BadRequest,
+                ErrorCodes.PASSWORD_TOO_WEAK => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return Results.Json(new ApiError(ex.Code, ex.Message), statusCode: statusCode);
+        }
         catch (ArgumentException ex)
         {
             logger.LogWarning(ex, "Registration validation failed for username: {Username}", request.Username);
-            return Results.BadRequest(new { error = ex.Message });
+            return Results.Json(new ApiError(ErrorCodes.VALIDATION_ERROR, ex.Message),
+                statusCode: StatusCodes.Status400BadRequest);
         }
         catch (InvalidOperationException ex)
         {
             logger.LogWarning(ex, "Registration failed for username: {Username}", request.Username);
-            return Results.BadRequest(new { error = ex.Message });
+            return Results.Json(new ApiError(ErrorCodes.VALIDATION_ERROR, ex.Message),
+                statusCode: StatusCodes.Status400BadRequest);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error during registration for username: {Username}", request.Username);
-            throw;
+            return Results.Json(new ApiError(ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred."),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

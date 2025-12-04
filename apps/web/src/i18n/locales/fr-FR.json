@@ -1,0 +1,53 @@
+{
+  "auth": {
+    "login": {
+      "title": "Afina",
+      "username": "Nom d'utilisateur",
+      "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "signInButton": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "signUpLink": "S'inscrire"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "username": "Nom d'utilisateur",
+      "usernamePlaceholder": "Choisissez un nom d'utilisateur",
+      "usernameHelp": "Nom d'utilisateur unique dans le système",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Créez un mot de passe fort",
+      "passwordHelp": "Ceci est votre mot de passe principal pour chiffrer vos données privées. Rendez-le fort et mémorable.",
+      "passwordWarning": "⚠️ Important : Il n'y a aucun moyen de récupérer ce mot de passe. Assurez-vous de vous en souvenir !",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Ressaisissez votre mot de passe",
+      "passwordHint": "Indice de mot de passe (Optionnel)",
+      "passwordHintPlaceholder": "Un indice pour vous aider à vous souvenir (ex: \"Le nom de mon animal d'enfance + année de naissance 🐕\")",
+      "passwordHintHelp": "N'incluez jamais votre mot de passe réel dans l'indice. Utilisez des emojis, des phrases ou des indices que vous seul comprenez.",
+      "registerButton": "Créer un compte",
+      "hasAccount": "Vous avez déjà un compte ?",
+      "signInLink": "Se connecter",
+      "successMessage": "Inscription réussie ! Vous pouvez maintenant vous connecter avec vos identifiants.",
+      "redirecting": "Redirection vers la connexion..."
+    }
+  },
+  "errors": {
+    "USERNAME_REQUIRED": "Le nom d'utilisateur est requis",
+    "PASSWORD_REQUIRED": "Le mot de passe est requis",
+    "USERNAME_ALREADY_EXISTS": "Ce nom d'utilisateur est déjà pris. Veuillez en choisir un autre.",
+    "USERNAME_INVALID": "Le nom d'utilisateur contient des caractères invalides",
+    "PASSWORD_TOO_WEAK": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort.",
+    "INVALID_CREDENTIALS": "Nom d'utilisateur ou mot de passe invalide",
+    "USER_NOT_FOUND": "Utilisateur non trouvé",
+    "VALIDATION_ERROR": "Erreur de validation",
+    "INTERNAL_ERROR": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+    "PASSWORD_MISMATCH": "Les mots de passe ne correspondent pas",
+    "PASSWORD_TOO_SHORT": "Le mot de passe doit contenir au moins 8 caractères",
+    "NETWORK_ERROR": "Erreur réseau. Veuillez vérifier votre connexion et réessayer."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  }
+}

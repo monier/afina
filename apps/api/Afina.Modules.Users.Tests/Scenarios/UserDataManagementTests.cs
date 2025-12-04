@@ -14,6 +14,8 @@ namespace Afina.Modules.Users.Tests.Scenarios;
 /// </summary>
 public class UserDataManagementTests : UsersIntegrationTestBase
 {
+    public UserDataManagementTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task UserDataManagement_CreateDataExportDelete_RemovesAllData()
     {
@@ -41,10 +43,10 @@ public class UserDataManagementTests : UsersIntegrationTestBase
 
         // Verify all data is inaccessible or deleted
         var profileAfterDelete = await Client.GetAsync("/api/v1/users/me");
-        profileAfterDelete.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        profileAfterDelete.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var exportAfterDelete = await Client.PostAsync("/api/v1/users/me/export", null);
-        exportAfterDelete.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        exportAfterDelete.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         // API keys endpoint may still succeed but return empty list (cascade delete)
         var keysAfterDelete = await Client.GetAsync("/api/v1/users/me/api-keys");
@@ -59,7 +61,8 @@ public class UserDataManagementTests : UsersIntegrationTestBase
         // Register with specific data
         var username = TestHelpers.GenerateTestUsername();
         var registerResponse = await TestHelpers.RegisterUserAsync(Client, username, "hash-123");
-        TestHelpers.SetAuthToken(Client, registerResponse.Token);
+        var loginResponse = await TestHelpers.LoginUserAsync(Client, username, "hash-123");
+        TestHelpers.SetAuthToken(Client, loginResponse.Token);
 
         // Export data
         var exportResponse = await Client.PostAsync("/api/v1/users/me/export", null);
@@ -68,11 +71,7 @@ public class UserDataManagementTests : UsersIntegrationTestBase
 
         // Verify export contains user data
         exportResult!.Data.Should().Contain(username);
-
-        // Get user ID from anonymous User object
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(registerResponse.User));
-        var userId = jsonDoc.RootElement.GetProperty("id").GetGuid();
-        exportResult.Data.Should().Contain(userId.ToString());
+        exportResult.Data.Should().Contain(loginResponse.UserId.ToString());
     }
 
     [Fact]
@@ -80,8 +79,9 @@ public class UserDataManagementTests : UsersIntegrationTestBase
     {
         // Create first user with data
         var user1Username = TestHelpers.GenerateTestUsername();
-        var user1Response = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        var user1RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
+        var user1LoginResponse = await TestHelpers.LoginUserAsync(Client, user1Username, "hash1");
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User1-Key" });
 
         var user1Export = await Client.PostAsync("/api/v1/users/me/export", null);
@@ -90,8 +90,9 @@ public class UserDataManagementTests : UsersIntegrationTestBase
         // Create second user with data
         TestHelpers.ClearAuthToken(Client);
         var user2Username = TestHelpers.GenerateTestUsername();
-        var user2Response = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
-        TestHelpers.SetAuthToken(Client, user2Response.Token);
+        var user2RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
+        var user2LoginResponse = await TestHelpers.LoginUserAsync(Client, user2Username, "hash2");
+        TestHelpers.SetAuthToken(Client, user2LoginResponse.Token);
         await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User2-Key" });
 
         var user2Export = await Client.PostAsync("/api/v1/users/me/export", null);
@@ -109,22 +110,21 @@ public class UserDataManagementTests : UsersIntegrationTestBase
     public async Task UserDataManagement_CannotAccessOtherUsersData()
     {
         // Create two users
-        var user1Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash1");
+        var user1Username = TestHelpers.GenerateTestUsername();
+        var user2Username = TestHelpers.GenerateTestUsername();
+        var user1RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
+        var user1LoginResponse = await TestHelpers.LoginUserAsync(Client, user1Username, "hash1");
         TestHelpers.ClearAuthToken(Client);
-        var user2Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash2");
+        var user2RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
+        var user2LoginResponse = await TestHelpers.LoginUserAsync(Client, user2Username, "hash2");
 
         // User2 tries to access user1's data using user1's token
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         var profile = await Client.GetAsync("/api/v1/users/me");
         var profileData = await profile.Content.ReadFromJsonAsync<Afina.Modules.Users.Features.GetCurrentUser.GetCurrentUserResponse>();
 
         // Verify it returns user1's data, not user2's
-        using var user1JsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(user1Response.User));
-        using var user2JsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(user2Response.User));
-        var user1Id = user1JsonDoc.RootElement.GetProperty("id").GetGuid();
-        var user2Id = user2JsonDoc.RootElement.GetProperty("id").GetGuid();
-
-        profileData!.Id.Should().Be(user1Id);
-        profileData.Id.Should().NotBe(user2Id);
+        profileData!.Id.Should().Be(user1LoginResponse.UserId);
+        profileData.Id.Should().NotBe(user2LoginResponse.UserId);
     }
 }

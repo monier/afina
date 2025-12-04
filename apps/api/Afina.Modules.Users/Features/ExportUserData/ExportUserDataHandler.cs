@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Shared.Persistence;
 using Microsoft.Extensions.Logging;
@@ -27,7 +28,7 @@ public sealed class ExportUserDataHandler : IRequestHandler<ExportUserDataReques
         if (user is null)
         {
             _logger.LogWarning("User {UserId} not found for data export", request.UserId);
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.UNAUTHORIZED, "Unauthorized access.");
         }
 
         var payload = new { id = user.Id, username = user.Username };

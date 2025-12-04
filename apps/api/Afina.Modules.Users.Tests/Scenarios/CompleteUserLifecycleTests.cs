@@ -15,6 +15,8 @@ namespace Afina.Modules.Users.Tests.Scenarios;
 /// </summary>
 public class CompleteUserLifecycleTests : UsersIntegrationTestBase
 {
+    public CompleteUserLifecycleTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task CompleteUserLifecycle_RegisterLoginCreateKeysExportDelete_WorksEndToEnd()
     {
@@ -23,12 +25,8 @@ public class CompleteUserLifecycleTests : UsersIntegrationTestBase
         var passwordHash = "secure-hash-123";
         var registerResponse = await TestHelpers.RegisterUserAsync(Client, username, passwordHash, "hint");
 
-        registerResponse.Token.Should().NotBeNullOrWhiteSpace();
-        registerResponse.User.Should().NotBeNull();
-
-        // Get user ID from anonymous User object
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(registerResponse.User));
-        var userId = jsonDoc.RootElement.GetProperty("id").GetGuid();
+        registerResponse.UserId.Should().NotBeEmpty();
+        var userId = registerResponse.UserId;
 
         // 2. Login with credentials
         TestHelpers.ClearAuthToken(Client);
@@ -65,7 +63,7 @@ public class CompleteUserLifecycleTests : UsersIntegrationTestBase
 
         // 8. Verify user is completely deleted
         var profileAfterDelete = await Client.GetAsync("/api/v1/users/me");
-        profileAfterDelete.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        profileAfterDelete.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         // 9. Verify cannot login anymore
         TestHelpers.ClearAuthToken(Client);

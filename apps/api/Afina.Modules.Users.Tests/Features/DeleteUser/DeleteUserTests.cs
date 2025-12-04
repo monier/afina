@@ -9,6 +9,8 @@ namespace Afina.Modules.Users.Tests.Features.DeleteUser;
 
 public class DeleteUserTests : UsersIntegrationTestBase
 {
+    public DeleteUserTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task DeleteUser_WithValidToken_DeletesUserSuccessfully()
     {
@@ -39,7 +41,7 @@ public class DeleteUserTests : UsersIntegrationTestBase
     public async Task DeleteUser_AfterDeletion_CannotAccessUserProfile()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Act
         var deleteResponse = await Client.DeleteAsync("/api/v1/users/me");
@@ -59,7 +61,8 @@ public class DeleteUserTests : UsersIntegrationTestBase
         var username = TestHelpers.GenerateTestUsername();
         var passwordHash = "hash-123";
         var registerResponse = await TestHelpers.RegisterUserAsync(Client, username, passwordHash);
-        TestHelpers.SetAuthToken(Client, registerResponse.Token);
+        var loginResponse = await TestHelpers.LoginUserAsync(Client, username, passwordHash);
+        TestHelpers.SetAuthToken(Client, loginResponse.Token);
 
         // Delete the user
         await Client.DeleteAsync("/api/v1/users/me");
@@ -71,18 +74,17 @@ public class DeleteUserTests : UsersIntegrationTestBase
             Username = username,
             AuthHash = passwordHash
         };
-        var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var newLoginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Assert
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        newLoginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task DeleteUser_AfterDeletion_RefreshTokenInvalid()
     {
         // Arrange
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
-        var refreshToken = registerResponse.RefreshToken;
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Delete the user
         await Client.DeleteAsync("/api/v1/users/me");

@@ -9,11 +9,13 @@ namespace Afina.Modules.Users.Tests.Features.GetCurrentUser;
 
 public class GetCurrentUserTests : UsersIntegrationTestBase
 {
+    public GetCurrentUserTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task GetCurrentUser_WithValidToken_ReturnsUserProfile()
     {
         // Arrange
-        var (registerResponse, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Act
         var response = await Client.GetAsync("/api/v1/users/me");
@@ -23,11 +25,7 @@ public class GetCurrentUserTests : UsersIntegrationTestBase
         var result = await response.Content.ReadFromJsonAsync<GetCurrentUserResponse>();
         result.Should().NotBeNull();
 
-        // Get user ID from registerResponse.User
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(registerResponse.User));
-        var expectedUserId = jsonDoc.RootElement.GetProperty("id").GetGuid();
-
-        result!.Id.Should().Be(expectedUserId);
+        result!.Id.Should().Be(userId);
         result.Username.Should().Be(username);
     }
 
@@ -61,12 +59,12 @@ public class GetCurrentUserTests : UsersIntegrationTestBase
     public async Task GetCurrentUser_AfterRefreshToken_ReturnsCorrectUser()
     {
         // Arrange
-        var (registerResponse, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Refresh the token
         var refreshRequest = new Afina.Modules.Users.Features.RefreshToken.RefreshTokenRequest
         {
-            RefreshToken = registerResponse.RefreshToken
+            RefreshToken = refreshToken
         };
         var refreshResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
         var refreshResult = await refreshResponse.Content.ReadFromJsonAsync<Afina.Modules.Users.Features.RefreshToken.RefreshTokenResponse>();

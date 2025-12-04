@@ -9,6 +9,8 @@ namespace Afina.Modules.Users.Tests.Features.Login;
 
 public class LoginTests : UsersIntegrationTestBase
 {
+    public LoginTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsTokensAndUserInfo()
     {
@@ -32,11 +34,7 @@ public class LoginTests : UsersIntegrationTestBase
         result.Should().NotBeNull();
         result!.Token.Should().NotBeNullOrWhiteSpace();
         result.RefreshToken.Should().NotBeNullOrWhiteSpace();
-        result.User.Should().NotBeNull();
-
-        // User is an anonymous object with id and username
-        using var jsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result.User));
-        jsonDoc.RootElement.GetProperty("username").GetString().Should().Be(username);
+        result.UserId.Should().NotBeEmpty();
     }
 
     [Fact]

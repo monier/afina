@@ -10,6 +10,8 @@ namespace Afina.Modules.Users.Tests.Features.CreateApiKey;
 
 public class CreateApiKeyTests : UsersIntegrationTestBase
 {
+    public CreateApiKeyTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task CreateApiKey_WithValidRequest_CreatesKeySuccessfully()
     {

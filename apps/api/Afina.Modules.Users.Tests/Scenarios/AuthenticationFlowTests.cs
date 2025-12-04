@@ -13,6 +13,8 @@ namespace Afina.Modules.Users.Tests.Scenarios;
 /// </summary>
 public class AuthenticationFlowTests : UsersIntegrationTestBase
 {
+    public AuthenticationFlowTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task AuthenticationFlow_LoginRefreshMultipleTimes_MaintainsSession()
     {
@@ -25,10 +27,7 @@ public class AuthenticationFlowTests : UsersIntegrationTestBase
         var loginResponse = await TestHelpers.LoginUserAsync(Client, username, passwordHash);
 
         var currentRefreshToken = loginResponse.RefreshToken;
-
-        // Get user ID from anonymous User object
-        using var loginJsonDoc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(loginResponse.User));
-        var originalUserId = loginJsonDoc.RootElement.GetProperty("id").GetGuid();
+        var originalUserId = loginResponse.UserId;
 
         // Perform multiple token refreshes
         for (int i = 0; i < 5; i++)
@@ -94,7 +93,7 @@ public class AuthenticationFlowTests : UsersIntegrationTestBase
     public async Task AuthenticationFlow_RegisterLoginLogout_ClearsSession()
     {
         // Register
-        var (registerResponse, username, passwordHash) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, username, passwordHash) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Verify authenticated
         var profileResponse = await Client.GetAsync("/api/v1/users/me");
@@ -123,8 +122,8 @@ public class AuthenticationFlowTests : UsersIntegrationTestBase
         // Currently, it tests that old tokens remain valid (no password change in this module)
         // If password change is added, update this test accordingly
 
-        var (registerResponse, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
-        var oldToken = registerResponse.Token;
+        var (userId, token, refreshToken, _, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var oldToken = token;
 
         // Token should work
         TestHelpers.SetAuthToken(Client, oldToken);

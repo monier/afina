@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Shared.Persistence;
 using Afina.Modules.Users.Shared.Services;
@@ -34,21 +35,21 @@ public sealed class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.AuthHash))
         {
             _logger.LogWarning("Login failed: Invalid username or password hash");
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.INVALID_CREDENTIALS, "Invalid username or password.");
         }
 
         var user = await _users.GetByUsernameAsync(request.Username, ct);
         if (user == null)
         {
             _logger.LogWarning("Login failed: User {Username} not found", request.Username);
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.INVALID_CREDENTIALS, "Invalid username or password.");
         }
 
         var ok = await _users.VerifyAuthHashAsync(user, request.AuthHash, ct);
         if (!ok)
         {
             _logger.LogWarning("Login failed: Invalid password for user {Username}", request.Username);
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.INVALID_CREDENTIALS, "Invalid username or password.");
         }
 
         var access = _tokens.CreateAccessToken(user.Id, user.Username);
@@ -61,7 +62,7 @@ public sealed class LoginHandler : IRequestHandler<LoginRequest, LoginResponse>
         {
             Token = access,
             RefreshToken = refresh,
-            User = new { id = user.Id, username = user.Username }
+            UserId = user.Id
         };
     }
 }

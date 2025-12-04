@@ -7,52 +7,62 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Afina.Data;
-using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Afina.Modules.Users.Tests;
 
+[Collection("Database collection")]
 public class UsersIntegrationTestBase : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgresContainer;
+    private readonly DatabaseFixture _dbFixture;
     protected WebApplicationFactory<Program> Factory { get; private set; } = default!;
     protected HttpClient Client { get; private set; } = default!;
 
-    public UsersIntegrationTestBase()
+    public UsersIntegrationTestBase(DatabaseFixture dbFixture)
     {
-        _postgresContainer = new PostgreSqlBuilder()
-            .WithDatabase("afina_test_db")
-            .WithUsername("postgres")
-            .WithPassword("postgres")
-            .Build();
+        _dbFixture = dbFixture;
     }
 
     public async Task InitializeAsync()
     {
-        await _postgresContainer.StartAsync();
-
         Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.UseEnvironment("Testing");
                 builder.ConfigureServices(services =>
                 {
                     services.RemoveAll<DbContextOptions<AfinaDbContext>>();
                     services.AddDbContext<AfinaDbContext>(options =>
-                        options.UseNpgsql(_postgresContainer.GetConnectionString()));
+                        options.UseNpgsql(_dbFixture.ConnectionString));
                 });
             });
 
-        Client = Factory.CreateClient();
+        // Create client that doesn't throw on error status codes
+        Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = false
+        });
 
-        // Apply migrations
+        // Ensure database schema is created once
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AfinaDbContext>();
-        await db.Database.MigrateAsync();
+        await _dbFixture.EnsureSchemaCreatedAsync(db);
     }
 
     public async Task DisposeAsync()
     {
+        // Clean up data after each test to maintain isolation
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AfinaDbContext>();
+
+        // Delete all data but keep schema - include all tables used in tests
+        await db.Database.ExecuteSqlRawAsync(@"
+            TRUNCATE TABLE ""ApiKeys"" CASCADE;
+            TRUNCATE TABLE ""RefreshTokens"" CASCADE;
+            TRUNCATE TABLE ""Users"" CASCADE;
+        ");
+
         await Factory.DisposeAsync();
-        await _postgresContainer.DisposeAsync();
     }
 }

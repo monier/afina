@@ -10,11 +10,13 @@ namespace Afina.Modules.Users.Tests.Features.ExportUserData;
 
 public class ExportUserDataTests : UsersIntegrationTestBase
 {
+    public ExportUserDataTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task ExportUserData_WithValidToken_ReturnsUserData()
     {
         // Arrange
-        var (registerResponse, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
+        var (userId, token, refreshToken, username, _) = await TestHelpers.RegisterAndAuthenticateAsync(Client);
 
         // Act
         var response = await Client.PostAsync("/api/v1/users/me/export", null);
@@ -29,10 +31,8 @@ public class ExportUserDataTests : UsersIntegrationTestBase
         var dataObj = JsonSerializer.Deserialize<JsonElement>(result.Data);
         dataObj.GetProperty("username").GetString().Should().Be(username);
 
-        // Get expected user ID from registerResponse.User
-        var regJsonDoc = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(registerResponse.User));
-        var expectedUserId = regJsonDoc.GetProperty("id").GetGuid();
-        dataObj.GetProperty("id").GetGuid().Should().Be(expectedUserId);
+        // Verify expected user ID
+        dataObj.GetProperty("id").GetGuid().Should().Be(userId);
     }
 
     [Fact]

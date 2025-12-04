@@ -82,9 +82,9 @@ public static class TestHelpers
     }
 
     /// <summary>
-    /// Registers a user and sets the auth token on the client
+    /// Registers a user, logs them in, and sets the auth token on the client
     /// </summary>
-    public static async Task<(RegisterResponse Response, string Username, string PasswordHash)> RegisterAndAuthenticateAsync(
+    public static async Task<(Guid UserId, string Token, string RefreshToken, string Username, string PasswordHash)> RegisterAndAuthenticateAsync(
         HttpClient client,
         string? username = null,
         string? passwordHash = null)
@@ -92,9 +92,10 @@ public static class TestHelpers
         username ??= GenerateTestUsername();
         passwordHash ??= $"hash_{Guid.NewGuid():N}";
 
-        var response = await RegisterUserAsync(client, username, passwordHash);
-        SetAuthToken(client, response.Token);
+        var registerResponse = await RegisterUserAsync(client, username, passwordHash);
+        var loginResponse = await LoginUserAsync(client, username, passwordHash);
+        SetAuthToken(client, loginResponse.Token);
 
-        return (response, username, passwordHash);
+        return (loginResponse.UserId, loginResponse.Token, loginResponse.RefreshToken, username, passwordHash);
     }
 }

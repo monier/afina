@@ -10,6 +10,8 @@ namespace Afina.Modules.Users.Tests.Features.DeleteApiKey;
 
 public class DeleteApiKeyTests : UsersIntegrationTestBase
 {
+    public DeleteApiKeyTests(DatabaseFixture dbFixture) : base(dbFixture) { }
+
     [Fact]
     public async Task DeleteApiKey_WithValidKey_DeletesSuccessfully()
     {
@@ -106,15 +108,19 @@ public class DeleteApiKeyTests : UsersIntegrationTestBase
     public async Task DeleteApiKey_CannotDeleteAnotherUsersKey()
     {
         // Arrange - create first user with a key
-        var user1Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash1");
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        var user1Username = TestHelpers.GenerateTestUsername();
+        var user1RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user1Username, "hash1");
+        var user1LoginResponse = await TestHelpers.LoginUserAsync(Client, user1Username, "hash1");
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         var createResponse = await Client.PostAsJsonAsync("/api/v1/users/me/api-keys", new CreateApiKeyRequest { Name = "User1 Key" });
         var user1Key = await createResponse.Content.ReadFromJsonAsync<CreateApiKeyResponse>();
 
         // Create second user
         TestHelpers.ClearAuthToken(Client);
-        var user2Response = await TestHelpers.RegisterUserAsync(Client, TestHelpers.GenerateTestUsername(), "hash2");
-        TestHelpers.SetAuthToken(Client, user2Response.Token);
+        var user2Username = TestHelpers.GenerateTestUsername();
+        var user2RegisterResponse = await TestHelpers.RegisterUserAsync(Client, user2Username, "hash2");
+        var user2LoginResponse = await TestHelpers.LoginUserAsync(Client, user2Username, "hash2");
+        TestHelpers.SetAuthToken(Client, user2LoginResponse.Token);
 
         // Act - user2 tries to delete user1's key
         var response = await Client.DeleteAsync($"/api/v1/users/me/api-keys/{user1Key!.Id}");
@@ -124,7 +130,7 @@ public class DeleteApiKeyTests : UsersIntegrationTestBase
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.Forbidden, HttpStatusCode.NotFound);
 
         // Verify user1's key still exists
-        TestHelpers.SetAuthToken(Client, user1Response.Token);
+        TestHelpers.SetAuthToken(Client, user1LoginResponse.Token);
         var listResponse = await Client.GetAsync("/api/v1/users/me/api-keys");
         var listResult = await listResponse.Content.ReadFromJsonAsync<ListApiKeysResponse>();
 

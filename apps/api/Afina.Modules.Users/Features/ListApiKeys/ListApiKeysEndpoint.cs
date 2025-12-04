@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
@@ -44,10 +45,21 @@ public class ListApiKeysEndpoint : IEndpoint
             var res = await mediator.CallAsync(req, ct);
             return Results.Ok(res);
         }
+        catch (ApiException ex)
+        {
+            logger.LogWarning(ex, "Error listing API keys for user {UserId} with code: {Code}", userId, ex.Code);
+            var statusCode = ex.Code switch
+            {
+                ErrorCodes.VALIDATION_ERROR => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return Results.Json(new ApiError(ex.Code, ex.Message), statusCode: statusCode);
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error listing API keys for user {UserId}", userId);
-            throw;
+            logger.LogError(ex, "Unexpected error listing API keys for user {UserId}", userId);
+            return Results.Json(new ApiError(ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred."),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

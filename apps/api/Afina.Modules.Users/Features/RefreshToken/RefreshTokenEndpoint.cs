@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
@@ -37,15 +38,22 @@ public class RefreshTokenEndpoint : IEndpoint
             logger.LogInformation("Token refreshed successfully");
             return Results.Ok(response);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ApiException ex)
         {
-            logger.LogWarning(ex, "Token refresh failed - unauthorized");
-            return Results.Unauthorized();
+            logger.LogWarning(ex, "Token refresh failed with code: {Code}", ex.Code);
+            var statusCode = ex.Code switch
+            {
+                ErrorCodes.INVALID_REFRESH_TOKEN => StatusCodes.Status401Unauthorized,
+                ErrorCodes.USER_DELETED => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return Results.Json(new ApiError(ex.Code, ex.Message), statusCode: statusCode);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error during token refresh");
-            throw;
+            return Results.Json(new ApiError(ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred."),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }
