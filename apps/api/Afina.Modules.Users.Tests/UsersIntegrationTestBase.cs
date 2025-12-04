@@ -15,7 +15,7 @@ namespace Afina.Modules.Users.Tests;
 public class UsersIntegrationTestBase : IAsyncLifetime
 {
     private readonly DatabaseFixture _dbFixture;
-    protected WebApplicationFactory<Program> Factory { get; private set; } = default!;
+    protected WebApplicationFactory<global::Program> Factory { get; private set; } = default!;
     protected HttpClient Client { get; private set; } = default!;
 
     public UsersIntegrationTestBase(DatabaseFixture dbFixture)
@@ -25,10 +25,10 @@ public class UsersIntegrationTestBase : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Factory = new WebApplicationFactory<Program>()
+        Factory = new WebApplicationFactory<global::Program>()
             .WithWebHostBuilder(builder =>
             {
-                builder.UseEnvironment("Testing");
+                builder.UseEnvironment("test");
                 builder.ConfigureServices(services =>
                 {
                     services.RemoveAll<DbContextOptions<AfinaDbContext>>();

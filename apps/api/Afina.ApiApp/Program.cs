@@ -1,6 +1,6 @@
 using Afina.Data;
-using Afina.Api.Endpoints;
-using Afina.Api.Infrastructure.Logging;
+using Afina.ApiApp.Infrastructure.Logging; // Corrected reference
+using Afina.Core.Configuration;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Features.Login;
@@ -19,29 +19,19 @@ using Serilog;
 using System.Reflection;
 using System.Text;
 
-// Configure Serilog early to capture startup logs
 var builder = WebApplication.CreateBuilder(args);
-
-// Configure Serilog
 builder.ConfigureLogging();
-
-// Add OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument(config =>
 {
     config.Title = "Afina API";
     config.Version = "v1";
 });
-
-// Add DbContext
 builder.Services.AddDbContext<AfinaDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add Authentication
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "Afina";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "AfinaClients";
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? "local-dev-signing-key-change-me";
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -56,27 +46,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
-
 builder.Services.AddAuthorization();
-
-// Register mediator for handler dispatch and Users services
 builder.Services.AddMediator();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<Afina.Modules.Users.Shared.Persistence.IUserRepository, Afina.Modules.Users.Shared.Persistence.UsersRepository>();
 builder.Services.AddScoped<Afina.Modules.Users.Shared.Persistence.IUserSessionsRepository, Afina.Modules.Users.Shared.Persistence.UserSessionsRepository>();
 builder.Services.AddScoped<Afina.Modules.Users.Shared.Persistence.IApiKeyRepository, Afina.Modules.Users.Shared.Persistence.ApiKeyRepository>();
-// Optionally scan encryption handlers via mediator registration (already scans loaded assemblies)
 builder.Services.AddScoped<TenantService>();
 builder.Services.AddScoped<VaultService>();
-
-// Add CORS
 builder.Services.AddCors(options =>
 {
     var corsOrigins = builder.Configuration["CorsOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries)
                       ?? new[] { "http://localhost:3000", "http://localhost:5173" };
-
     Console.WriteLine($"Configured CORS Origins: {string.Join(", ", corsOrigins)}");
-
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(corsOrigins)
@@ -84,38 +66,21 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevEnvironment())
 {
-    // Serve the OpenAPI JSON at the default NSwag route: /swagger/v1/swagger.json
     app.UseOpenApi();
-
-    // Serve the Swagger UI with defaults (path: /swagger, doc discovery handled automatically)
     app.UseSwaggerUi();
-
-    // Compatibility redirect for legacy Swashbuckle path /swagger/index.html
     app.MapGet("/swagger/index.html", ctx =>
     {
         ctx.Response.Redirect("/swagger");
         return Task.CompletedTask;
     });
 }
-
-// Register migration endpoint (only in Development/Staging)
-if (!app.Environment.IsProduction())
-{
-    app.MapMigrationEndpoint();
-}
-
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Map endpoints using IEndpoint interface
 new LoginEndpoint().MapEndpoint(app);
 new RefreshTokenEndpoint().MapEndpoint(app);
 new RegisterEndpoint().MapEndpoint(app);
@@ -128,7 +93,6 @@ new Afina.Modules.Users.Features.DeleteApiKey.DeleteApiKeyEndpoint().MapEndpoint
 new CreateTenantEndpoint().MapEndpoint(app);
 new CreateVaultItemEndpoint().MapEndpoint(app);
 new ListVaultItemsEndpoint().MapEndpoint(app);
-
 try
 {
     Log.Information("Starting Afina API application");
@@ -144,5 +108,4 @@ finally
     Log.CloseAndFlush();
 }
 
-// Make Program class accessible for integration tests
 public partial class Program { }

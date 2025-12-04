@@ -235,14 +235,14 @@ run: ## Run all services (Docker-based)
 	@echo "   • Stop services:    make stop"
 	@echo "   • Restart services: make restart"
 
-run-api-native: ## Run API natively (requires PostgreSQL running)
+run-api-native: ## Run API natively
 	$(check_dotnet)
 	$(check_postgres_native)
 	@echo "🚀 Starting API natively..."
 	@echo "   PostgreSQL: localhost:$(DB_PORT)"
 	@echo "   API will run on: http://localhost:$(API_PORT)"
 	@echo ""
-	@cd apps/api/Afina.Api && \
+	@cd apps/api/Afina.ApiApp && \
 		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
 		ASPNETCORE_URLS="http://localhost:$(API_PORT)" \
 		dotnet run
@@ -251,7 +251,7 @@ run-web-native: ## Run Web natively
 	$(check_node)
 	@echo "🚀 Starting Web natively..."
 	@echo "   Web will run on: http://localhost:5173 (Vite default)"
-	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo "   API endpoint: $(FRONTEND_API_BASE_URL)"
 	@echo ""
 	@cd apps/web && npm run dev
 
@@ -263,7 +263,7 @@ stop: ## Stop all Docker services
 
 stop-native: ## Stop native services (kills background processes)
 	@echo "🛑 Stopping native services..."
-	@pkill -f "dotnet.*Afina.Api" || echo "  → API not running"
+	@pkill -f "dotnet.*Afina.ApiApp" || echo "  → API not running"
 	@pkill -f "vite" || echo "  → Web not running"
 	@echo "✅ Native services stopped"
 
@@ -343,7 +343,7 @@ add-migration: ## Create a new EF Core migration (Docker) - Usage: make add-migr
 		exit 1; \
 	fi
 	@echo "📝 Creating migration: $(NAME)"
-	$(COMPOSE_CMD) run --rm --no-deps migrate dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.Api
+	$(COMPOSE_CMD) run --rm --no-deps migrate dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.ApiApp
 	@echo "✅ Migration '$(NAME)' created successfully"
 	@echo ""
 	@echo "💡 Next steps:"
@@ -358,7 +358,7 @@ add-migration-native: ## Create a new EF Core migration (native) - Usage: make a
 		exit 1; \
 	fi
 	@echo "📝 Creating migration: $(NAME)"
-	@cd apps/api && dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.Api
+	@cd apps/api && dotnet ef migrations add $(NAME) --project Afina.Data --startup-project Afina.ApiApp
 	@echo "✅ Migration '$(NAME)' created successfully"
 	@echo ""
 	@echo "💡 Next steps:"
@@ -377,7 +377,7 @@ execute-migration-native: ## Execute pending database migrations (native)
 	@echo "🗄️  Executing database migrations..."
 	@cd apps/api && \
 		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
-		dotnet ef database update --project Afina.Data --startup-project Afina.Api
+		dotnet ef database update --project Afina.Data --startup-project Afina.ApiApp
 	@echo "✅ Migrations executed successfully"
 
 # ============================================================================
@@ -447,7 +447,7 @@ dev-api: ## Run API with hot reload (native)
 	@echo "   PostgreSQL: localhost:$(DB_PORT)"
 	@echo "   API will run on: http://localhost:$(API_PORT)"
 	@echo ""
-	@cd apps/api/Afina.Api && \
+	@cd apps/api/Afina.ApiApp && \
 		ConnectionStrings__DefaultConnection="Host=localhost;Port=$(DB_PORT);Database=$(DB_NAME);Username=$(DB_USER);Password=$(DB_PASSWORD)" \
 		ASPNETCORE_URLS="http://localhost:$(API_PORT)" \
 		dotnet watch run
@@ -456,7 +456,7 @@ dev-web: ## Run Web with hot reload (native)
 	$(check_node)
 	@echo "🔥 Starting Web with hot reload..."
 	@echo "   Web will run on: http://localhost:5173 (Vite default)"
-	@echo "   API endpoint: $(VITE_API_URL)"
+	@echo "   API endpoint: $(FRONTEND_API_BASE_URL)"
 	@echo ""
 	@cd apps/web && npm run dev
 

@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace Afina.Api.Infrastructure.Logging;
+namespace Afina.ApiApp.Infrastructure.Logging;
 
 public static class LoggingExtensions
 {
