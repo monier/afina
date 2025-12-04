@@ -21,4 +21,7 @@
     <ProjectReference Include="../Afina.Api/Afina.Api.csproj" />
     <ProjectReference Include="../Afina.Modules.Users/Afina.Modules.Users.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

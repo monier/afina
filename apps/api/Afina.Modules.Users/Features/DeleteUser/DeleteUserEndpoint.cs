@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
@@ -45,10 +46,22 @@ public class DeleteUserEndpoint : IEndpoint
             logger.LogInformation("User {UserId} deleted via endpoint", userId);
             return Results.NoContent();
         }
+        catch (ApiException ex)
+        {
+            logger.LogWarning(ex, "Error deleting user {UserId} with code: {Code}", userId, ex.Code);
+            var statusCode = ex.Code switch
+            {
+                ErrorCodes.USER_DELETED => StatusCodes.Status401Unauthorized,
+                ErrorCodes.UNAUTHORIZED => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return Results.Json(new ApiError(ex.Code, ex.Message), statusCode: statusCode);
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error deleting user {UserId}", userId);
-            throw;
+            logger.LogError(ex, "Unexpected error deleting user {UserId}", userId);
+            return Results.Json(new ApiError(ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred."),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

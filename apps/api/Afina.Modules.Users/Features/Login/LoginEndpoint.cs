@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Core.Interfaces;
 using Afina.Infrastructure.Mediator;
 using Microsoft.AspNetCore.Builder;
@@ -37,15 +38,21 @@ public class LoginEndpoint : IEndpoint
             logger.LogInformation("Login successful for username: {Username}", request.Username);
             return Results.Ok(response);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ApiException ex)
         {
-            logger.LogWarning(ex, "Login failed for username: {Username}", request.Username);
-            return Results.Unauthorized();
+            logger.LogWarning(ex, "Login failed for username: {Username} with code: {Code}", request.Username, ex.Code);
+            var statusCode = ex.Code switch
+            {
+                ErrorCodes.INVALID_CREDENTIALS => StatusCodes.Status401Unauthorized,
+                _ => StatusCodes.Status400BadRequest
+            };
+            return Results.Json(new ApiError(ex.Code, ex.Message), statusCode: statusCode);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unexpected error during login for username: {Username}", request.Username);
-            throw;
+            return Results.Json(new ApiError(ErrorCodes.INTERNAL_ERROR, "An unexpected error occurred."),
+                statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

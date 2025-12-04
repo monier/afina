@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Afina.Core.Api;
 using Afina.Infrastructure.Mediator;
 using Afina.Modules.Users.Shared.Persistence;
 using Afina.Modules.Users.Shared.Services;
@@ -35,14 +36,14 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenRequest, R
         if (userId is null)
         {
             _logger.LogWarning("Invalid refresh token provided");
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.INVALID_REFRESH_TOKEN, "Invalid or expired refresh token.");
         }
 
         var user = await _users.GetByIdAsync(userId.Value, ct);
         if (user is null)
         {
             _logger.LogWarning("User {UserId} not found during token refresh", userId.Value);
-            throw new UnauthorizedAccessException();
+            throw new ApiException(ErrorCodes.USER_DELETED, "User account no longer exists.");
         }
 
         await _sessions.RevokeSessionAsync(request.RefreshToken, ct);

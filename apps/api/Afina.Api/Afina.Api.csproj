@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Afina.Modules.Identity\Afina.Modules.Identity.csproj" />
     <ProjectReference Include="..\Afina.Modules.Users\Afina.Modules.Users.csproj" />
     <ProjectReference Include="..\Afina.Modules.Tenant\Afina.Modules.Tenant.csproj" />
     <ProjectReference Include="..\Afina.Modules.Vault\Afina.Modules.Vault.csproj" />

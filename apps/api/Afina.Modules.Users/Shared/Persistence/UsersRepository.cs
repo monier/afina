@@ -27,18 +27,25 @@ public sealed class UsersRepository : IUserRepository
 
     public async Task<User> CreateUserAsync(string username, string passwordHash, string? passwordHint, CancellationToken ct)
     {
+        // Ensure race-safe first-admin assignment using a SERIALIZABLE transaction
+        await using var tx = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+
+        var existingUsersCount = await _db.Set<User>().CountAsync(ct);
+
         var user = new User
         {
             Id = Guid.NewGuid(),
             Username = username,
             PasswordHash = passwordHash,
             PasswordHint = passwordHint,
-            SystemRole = SystemRole.Member,
+            SystemRole = existingUsersCount == 0 ? SystemRole.Admin : SystemRole.Member,
             CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             CreatedAtUtc = DateTime.UtcNow
         };
+
         _db.Set<User>().Add(user);
         await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return user;
     }
 
