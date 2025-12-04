@@ -414,25 +414,24 @@ postgresql:
 
 ## Logging
 
-The platform includes optional Grafana + Loki logging:
+Logs are output to the console for both Docker and native deployments:
 
-### Enable Logging
+### View Logs
 
 ```bash
-# In .env
-COMPOSE_PROFILES=observability
-LOGGING_PROVIDER=Grafana
+# Docker: View all service logs
+make logs
 
-# Restart services
-make restart
+# Docker: View API logs specifically
+make logs-api
+
+# Docker: View database logs
+make logs-db
+
+# Native: Check console output where services are running
 ```
 
-### Access Logs
-
-- **Grafana UI**: http://localhost:3001
-- **Query logs**: Use LogQL in Grafana Explore
-
-See [Logging Documentation](observability.md) for details.
+See [Logging Documentation](observability.md) for configuration details.
 
 ### Health Check Endpoints
 

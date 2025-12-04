@@ -213,7 +213,7 @@ We have migrated from feature-group folders (e.g., `Authentication/`, `UserProfi
 ## Cross-Cutting Concerns
 
 - Security: Authentication, authorization, and encryption modules.
-- Logging: Serilog with Grafana + Loki integration.
+- Logging: Serilog with console output for structured logging.
 - Deployment: Docker Compose for API and web; Nginx serves static assets.
     subgraph "Encryption Layer"
         ES[Encryption Service (Default or Custom)]

@@ -22,22 +22,6 @@ using System.Text;
 // Configure Serilog early to capture startup logs
 var builder = WebApplication.CreateBuilder(args);
 
-// Map .env variables to configuration keys for logging providers
-var env = Environment.GetEnvironmentVariables();
-void MapEnv(string envKey, string configKey)
-{
-    if (env.Contains(envKey) && env[envKey] is string v && !string.IsNullOrWhiteSpace(v))
-    {
-        builder.Configuration[configKey] = v;
-    }
-}
-// Grafana configuration
-MapEnv("GRAFANA_LOKI_ENDPOINT", "Grafana:LokiEndpoint");
-MapEnv("GRAFANA_SERVICE_NAME", "Grafana:ServiceName");
-MapEnv("GRAFANA_SERVICE_VERSION", "Grafana:ServiceVersion");
-// Logging provider selection
-MapEnv("LOGGING_PROVIDER", "Logging:Provider");
-
 // Configure Serilog
 builder.ConfigureLogging();
 

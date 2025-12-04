@@ -76,7 +76,6 @@ Run `make help` to see all available commands.
 | `make before-push` | Run all checks before pushing |
 | `make dev-api`     | Run API with hot reload       |
 | `make dev-web`     | Run Web with hot reload       |
-| `make grafana`     | Open Grafana UI               |
 
 ### Native Development
 
@@ -97,7 +96,6 @@ Add `-native` suffix to run commands natively (e.g., `make build-native`, `make 
 - **API**: http://localhost:5100
 - **API Docs**: http://localhost:5100/swagger
 - **PostgreSQL**: localhost:5432
-- **Grafana** (if `COMPOSE_PROFILES=observability`): http://localhost:3001
 
 ### Native Development
 
@@ -195,20 +193,18 @@ make clean
 - **Automatic migrations**: Database migrations on API startup (Docker)
 - **Hot reload**: Native development with instant code updates
 - **Persistent volumes**: Database data survives container restarts
-- **Logging**: Grafana + Loki for centralized log aggregation
+- **Logging**: Structured logging to console output
 
 ## Logging
 
-Afina uses Serilog for structured logging with optional Grafana + Loki integration.
+Afina uses Serilog for structured logging. Logs are output to the console in both Docker and native deployments.
 
 ```bash
-# Enable in .env
-COMPOSE_PROFILES=observability
-LOGGING_PROVIDER=Grafana
+# Docker: View logs
+make logs
 
-# Start and view logs
-make run
-make grafana
+# Docker: View API logs specifically
+make logs-api
 ```
 
 See [Logging Documentation](docs/observability.md) for details.
